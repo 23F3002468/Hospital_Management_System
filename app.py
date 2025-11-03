@@ -1,5 +1,5 @@
-from flask import Flask, jsonify
-from flask_login import LoginManager
+from flask import Flask, jsonify, render_template, redirect, url_for
+from flask_login import LoginManager, current_user, login_required
 from flask_cors import CORS
 from flask_caching import Cache
 from celery import Celery
@@ -37,7 +37,7 @@ def create_app(config_name=None):
     celery.conf.update(app.config)
     
     # Configure Flask-Login
-    login_manager.login_view = 'auth.login'
+    login_manager.login_view = 'index'
     login_manager.login_message = 'Please log in to access this page.'
     
     @login_manager.user_loader
@@ -48,15 +48,13 @@ def create_app(config_name=None):
     # Register blueprints
     from routes.auth import auth_bp
     from routes.admin import admin_bp
-    # from routes.doctor import doctor_bp
+    from routes.doctor import doctor_bp
     from routes.patient import patient_bp
-    # from routes.public import public_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
-    # app.register_blueprint(doctor_bp, url_prefix='/api/doctor')
+    app.register_blueprint(doctor_bp, url_prefix='/api/doctor')
     app.register_blueprint(patient_bp, url_prefix='/api/patient')
-    # app.register_blueprint(public_bp, url_prefix='/api/public')
     
     # Health check endpoint
     @app.route('/api/health')
@@ -67,10 +65,10 @@ def create_app(config_name=None):
             'message': 'Hospital Management System API is running'
         }), 200
     
-    # Root endpoint
-    @app.route('/')
-    def index():
-        """Root endpoint"""
+    # API info endpoint
+    @app.route('/api')
+    def api_info():
+        """API information endpoint"""
         return jsonify({
             'message': 'Welcome to Hospital Management System API',
             'version': '1.0',
@@ -130,6 +128,64 @@ app = create_app()
 # Create Celery instance
 celery = make_celery(app)
 
+
+# ============================================================================
+# HTML ROUTES (Serve Vue.js pages)
+# ============================================================================
+
+@app.route('/')
+def index():
+    """Landing page / Login"""
+    if current_user.is_authenticated:
+        # Redirect to appropriate dashboard
+        if current_user.is_admin:
+            return redirect('/admin/dashboard')
+        elif current_user.is_doctor:
+            return redirect('/doctor/dashboard')
+        elif current_user.is_patient:
+            return redirect('/patient/dashboard')
+    return render_template('index.html')
+
+
+@app.route('/register')
+def register_page():
+    """Registration page"""
+    return render_template('register.html')
+
+
+@app.route('/admin/dashboard')
+@login_required
+def admin_dashboard():
+    """Admin dashboard page"""
+    if not current_user.is_admin:
+        return redirect('/')
+    return render_template('admin_dashboard.html')
+
+
+@app.route('/doctor/dashboard')
+@login_required
+def doctor_dashboard():
+    """Doctor dashboard page"""
+    if not current_user.is_doctor:
+        return redirect('/')
+    return render_template('doctor_dashboard.html')
+
+
+@app.route('/patient/dashboard')
+@login_required
+def patient_dashboard():
+    """Patient dashboard page"""
+    if not current_user.is_patient:
+        return redirect('/')
+    return render_template('patient_dashboard.html')
+
+@app.route('/patient/history')
+@login_required
+def patient_history():
+    """Patient treatment history page"""
+    if not current_user.is_patient:
+        return redirect('/')
+    return render_template('patient_history.html')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -1,0 +1,274 @@
+/* Custom Styles for Hospital Management System */
+
+:root {
+    --primary-green: #198754;
+    --primary-green-dark: #146c43;
+    --primary-green-light: #d1e7dd;
+    --secondary-green: #20c997;
+    --accent-teal: #0dcaf0;
+    --success: #28a745;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --light-bg: #f8f9fa;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--light-bg);
+}
+
+main {
+    flex: 1;
+}
+
+/* Navbar - Green Theme */
+.navbar.bg-primary {
+    background-color: var(--primary-green) !important;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
+/* Card Styles */
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header.bg-primary {
+    background-color: var(--primary-green) !important;
+    color: white;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+/* Button Styles - Green Theme */
+.btn-primary {
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-green-dark);
+    border-color: var(--primary-green-dark);
+}
+
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--primary-green-dark);
+    border-color: var(--primary-green-dark);
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+.btn-outline-primary {
+    color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+/* Dashboard Stats Cards */
+.stat-card {
+    border-left: 4px solid var(--primary-green);
+    transition: transform 0.2s;
+    background: white;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stat-card.success {
+    border-left-color: var(--success);
+}
+
+.stat-card.warning {
+    border-left-color: var(--warning);
+}
+
+.stat-card.danger {
+    border-left-color: var(--danger);
+}
+
+.stat-card.info {
+    border-left-color: var(--accent-teal);
+}
+
+/* Table Styles */
+.table {
+    background-color: white;
+}
+
+.table th {
+    background-color: var(--primary-green-light);
+    border-bottom: 2px solid var(--primary-green);
+    color: var(--primary-green-dark);
+}
+
+/* Badge Styles */
+.badge {
+    padding: 0.5em 0.8em;
+}
+
+/* Appointment Status Colors */
+.status-booked {
+    background-color: var(--primary-green);
+}
+
+.status-completed {
+    background-color: var(--success);
+}
+
+.status-cancelled {
+    background-color: var(--danger);
+}
+
+.border-primary {
+    border-color: var(--primary-green) !important;
+}
+
+/* Loading Spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+.spinner-border.text-primary {
+    color: var(--primary-green) !important;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+    background-color: white !important;
+}
+
+/* Form Styles */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+.input-group-text {
+    background-color: var(--primary-green-light);
+    border-color: var(--primary-green);
+    color: var(--primary-green-dark);
+}
+
+/* Modal Styles */
+.modal-header.bg-primary {
+    background-color: var(--primary-green) !important;
+    color: white;
+}
+
+/* Links */
+a.text-primary {
+    color: var(--primary-green) !important;
+}
+
+a.text-primary:hover {
+    color: var(--primary-green-dark) !important;
+}
+
+/* Text colors */
+.text-primary {
+    color: var(--primary-green) !important;
+}
+
+.bg-light {
+    background-color: var(--primary-green-light) !important;
+}
+
+/* Alert styles */
+.alert-success {
+    background-color: var(--primary-green-light);
+    border-color: var(--primary-green);
+    color: var(--primary-green-dark);
+}
+
+/* Cards with green accents */
+.card.border-primary {
+    border-color: var(--primary-green) !important;
+}
+
+.border-start.border-primary {
+    border-left-color: var(--primary-green) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+    
+    .table {
+        font-size: 0.875rem;
+    }
+}
+
+/* Utility Classes */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.cursor-pointer:hover {
+    background-color: var(--primary-green-light);
+}
+
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Hospital-themed icons color */
+.bi-hospital {
+    color: var(--primary-green);
+}
+
+/* Icon spacing fix */
+.bi {
+    margin-right: 0.3rem;
+}
+
+/* Adjust spacing for icons in specific contexts */
+h2 .bi, h5 .bi, h6 .bi {
+    margin-right: 0.5rem;
+}
+
+.btn .bi {
+    margin-right: 0.25rem;
+}
+
+.badge .bi {
+    margin-right: 0.2rem;
+}
+
+/* Occupied slot styling */
+.btn-secondary[disabled] {
+    cursor: not-allowed;
+    background-color: #e9ecef !important;
+    border-color: #dee2e6 !important;
+    color: #6c757d !important;
+}
+
+.btn-secondary[disabled]:hover {
+    background-color: #e9ecef !important;
+    border-color: #dee2e6 !important;
+}
+
+/* Time slot buttons */
+.btn.w-100 small {
+    font-size: 0.7rem;
+    display: block;
+    margin-top: 2px;
+}

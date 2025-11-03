@@ -107,7 +107,7 @@ def search_doctors():
 @patient_bp.route('/doctors/<int:doctor_id>/availability', methods=['GET'])
 @patient_required
 def get_doctor_availability(doctor_id):
-    """Get doctor's availability for next 7 days"""
+    """Get doctor's availability for next 7 days with slot occupancy details"""
     try:
         doctor = Doctor.query.get_or_404(doctor_id)
         
@@ -121,25 +121,41 @@ def get_doctor_availability(doctor_id):
             DoctorAvailability.is_available == True
         ).order_by(DoctorAvailability.date, DoctorAvailability.start_time).all()
         
+        # For each availability slot, get occupied time slots
+        availability_with_occupied = []
+        for slot in availability:
+            # Get all booked appointments for this slot
+            booked_times = db.session.query(Appointment.appointment_time).filter(
+                Appointment.doctor_id == doctor_id,
+                Appointment.appointment_date == slot.date,
+                Appointment.appointment_time >= slot.start_time,
+                Appointment.appointment_time < slot.end_time,
+                Appointment.status == 'Booked'
+            ).all()
+            
+            occupied_times = [t[0].strftime('%H:%M') for t in booked_times]
+            
+            availability_with_occupied.append({
+                'id': slot.id,
+                'date': slot.date.isoformat(),
+                'start_time': slot.start_time.strftime('%H:%M'),
+                'end_time': slot.end_time.strftime('%H:%M'),
+                'slots_available': slot.slots_available,
+                'booked_count': slot.booked_appointments_count,
+                'occupied_times': occupied_times
+            })
+        
         return jsonify({
             'doctor': {
                 'id': doctor.id,
                 'name': doctor.user.full_name,
                 'department': doctor.department.name
             },
-            'availability': [{
-                'id': slot.id,
-                'date': slot.date.isoformat(),
-                'start_time': slot.start_time.strftime('%H:%M'),
-                'end_time': slot.end_time.strftime('%H:%M'),
-                'slots_available': slot.slots_available,
-                'booked_count': slot.booked_appointments_count
-            } for slot in availability]
+            'availability': availability_with_occupied
         }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @patient_bp.route('/appointments/book', methods=['POST'])
 @patient_required
@@ -155,10 +171,18 @@ def book_appointment():
         
         doctor_id = data['doctor_id']
         apt_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
-        apt_time = datetime.strptime(data['appointment_time'], '%H:%M').time()
+        apt_time_str = data['appointment_time']
+        
+        # Parse time - handle both "HH:MM" and "HH:MM:SS" formats
+        try:
+            apt_time = datetime.strptime(apt_time_str, '%H:%M').time()
+        except ValueError:
+            apt_time = datetime.strptime(apt_time_str, '%H:%M:%S').time()
         
         # Check if date is in the future
-        if apt_date < datetime.utcnow().date():
+        now = datetime.utcnow()
+        apt_datetime = datetime.combine(apt_date, apt_time)
+        if apt_datetime < now:
             return jsonify({'error': 'Cannot book appointments in the past'}), 400
         
         # Check if doctor exists and is active
@@ -178,10 +202,18 @@ def book_appointment():
         if not availability:
             return jsonify({'error': 'Doctor is not available at this time'}), 400
         
-        if not availability.slots_available:
-            return jsonify({'error': 'No slots available for this time'}), 400
+        # Check slot availability (count appointments in this half-hour slot)
+        existing_appointments = Appointment.query.filter(
+            Appointment.doctor_id == doctor_id,
+            Appointment.appointment_date == apt_date,
+            Appointment.appointment_time == apt_time,
+            Appointment.status == 'Booked'
+        ).count()
         
-        # Check for duplicate appointment
+        if existing_appointments >= 1:  # Only 1 appointment per half-hour slot
+            return jsonify({'error': 'This time slot is already booked'}), 400
+        
+        # Check for duplicate appointment for this patient
         existing = Appointment.query.filter(
             Appointment.patient_id == patient.id,
             Appointment.doctor_id == doctor_id,

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}My Treatment History - HMS{% endblock %}
+
+{% block content %}
+<div id="app" class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="bi bi-clock-history text-primary"></i> My Treatment History</h2>
+            <p class="text-muted">View your past appointments and treatments</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div v-if="loading" class="text-center py-5">
+                        <div class="spinner-border text-primary"></div>
+                    </div>
+                    <div v-else-if="treatments.length === 0" class="text-center text-muted py-5">
+                        <i class="bi bi-folder-x" style="font-size: 3rem;"></i>
+                        <p class="mt-3">No treatment history available</p>
+                    </div>
+                    <div v-else>
+                        <div v-for="treatment in treatments" :key="treatment.id" class="card mb-3 border-start border-primary border-3">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h5 class="card-title">
+                                            Dr. <span v-text="treatment.doctor_name"></span>
+                                            <span class="badge bg-primary ms-2" v-text="treatment.department"></span>
+                                        </h5>
+                                        <p class="text-muted mb-2">
+                                            <i class="bi bi-calendar"></i> <span v-text="formatDate(treatment.date)"></span>
+                                        </p>
+                                        
+                                        <div class="mb-2">
+                                            <strong><i class="bi bi-clipboard-pulse"></i> Diagnosis:</strong>
+                                            <p v-text="treatment.diagnosis"></p>
+                                        </div>
+                                        
+                                        <div class="mb-2" v-if="treatment.prescription">
+                                            <strong><i class="bi bi-capsule"></i> Prescription:</strong>
+                                            <p v-text="treatment.prescription"></p>
+                                        </div>
+                                        
+                                        <div class="mb-2" v-if="treatment.notes">
+                                            <strong><i class="bi bi-sticky"></i> Notes:</strong>
+                                            <p v-text="treatment.notes"></p>
+                                        </div>
+                                        
+                                        <div v-if="treatment.follow_up_required" class="alert alert-warning py-2 mb-0">
+                                            <i class="bi bi-exclamation-triangle"></i> 
+                                            <strong>Follow-up Required:</strong> 
+                                            <span v-if="treatment.follow_up_date" v-text="formatDate(treatment.follow_up_date)"></span>
+                                            <span v-else>Date not specified</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const { createApp } = Vue;
+
+createApp({
+    data() {
+        return {
+            treatments: [],
+            loading: true
+        }
+    },
+    mounted() {
+        this.loadTreatmentHistory();
+    },
+    methods: {
+        async loadTreatmentHistory() {
+            try {
+                const response = await axios.get('/api/patient/treatment-history');
+                this.treatments = response.data.treatments;
+            } catch (error) {
+                console.error('Error loading treatment history:', error);
+                alert('Failed to load treatment history');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString('en-IN', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+        },
+        
+        async logout() {
+            try {
+                await axios.post('/api/auth/logout');
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+    }
+}).mount('#app');
+</script>
+{% endblock %}
