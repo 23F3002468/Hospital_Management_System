@@ -107,7 +107,7 @@ def search_doctors():
 @patient_bp.route('/doctors/<int:doctor_id>/availability', methods=['GET'])
 @patient_required
 def get_doctor_availability(doctor_id):
-    """Get doctor's availability for next 7 days with slot occupancy details"""
+    """Get doctor's availability for next 7 days"""
     try:
         doctor = Doctor.query.get_or_404(doctor_id)
         
@@ -121,41 +121,25 @@ def get_doctor_availability(doctor_id):
             DoctorAvailability.is_available == True
         ).order_by(DoctorAvailability.date, DoctorAvailability.start_time).all()
         
-        # For each availability slot, get occupied time slots
-        availability_with_occupied = []
-        for slot in availability:
-            # Get all booked appointments for this slot
-            booked_times = db.session.query(Appointment.appointment_time).filter(
-                Appointment.doctor_id == doctor_id,
-                Appointment.appointment_date == slot.date,
-                Appointment.appointment_time >= slot.start_time,
-                Appointment.appointment_time < slot.end_time,
-                Appointment.status == 'Booked'
-            ).all()
-            
-            occupied_times = [t[0].strftime('%H:%M') for t in booked_times]
-            
-            availability_with_occupied.append({
-                'id': slot.id,
-                'date': slot.date.isoformat(),
-                'start_time': slot.start_time.strftime('%H:%M'),
-                'end_time': slot.end_time.strftime('%H:%M'),
-                'slots_available': slot.slots_available,
-                'booked_count': slot.booked_appointments_count,
-                'occupied_times': occupied_times
-            })
-        
         return jsonify({
             'doctor': {
                 'id': doctor.id,
                 'name': doctor.user.full_name,
                 'department': doctor.department.name
             },
-            'availability': availability_with_occupied
+            'availability': [{
+                'id': slot.id,
+                'date': slot.date.isoformat(),
+                'start_time': slot.start_time.strftime('%H:%M'),
+                'end_time': slot.end_time.strftime('%H:%M'),
+                'slots_available': slot.slots_available,
+                'booked_count': slot.booked_appointments_count
+            } for slot in availability]
         }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @patient_bp.route('/appointments/book', methods=['POST'])
 @patient_required

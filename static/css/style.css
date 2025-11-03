@@ -252,23 +252,3 @@ h2 .bi, h5 .bi, h6 .bi {
 .badge .bi {
     margin-right: 0.2rem;
 }
-
-/* Occupied slot styling */
-.btn-secondary[disabled] {
-    cursor: not-allowed;
-    background-color: #e9ecef !important;
-    border-color: #dee2e6 !important;
-    color: #6c757d !important;
-}
-
-.btn-secondary[disabled]:hover {
-    background-color: #e9ecef !important;
-    border-color: #dee2e6 !important;
-}
-
-/* Time slot buttons */
-.btn.w-100 small {
-    font-size: 0.7rem;
-    display: block;
-    margin-top: 2px;
-}

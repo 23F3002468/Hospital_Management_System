@@ -4,391 +4,480 @@
 
 {% block content %}
 <div id="app" class="container-fluid py-4">
-  <!-- Welcome Section -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <h2>
-        <i class="bi bi-person-circle text-primary"></i>
-        Welcome, <span v-text="patientInfo.name"></span>!
-      </h2>
-      <p class="text-muted">
-        Manage your appointments and view your medical history
-        <a href="/patient/history" class="btn btn-sm btn-outline-primary ms-3">
-          <i class="bi bi-clock-history"></i> View Full History
-        </a>
-      </p>
-    </div>
-  </div>
-
-  <!-- Quick Stats -->
-  <div class="row mb-4">
-    <div class="col-md-4 mb-3">
-      <div class="card stat-card info">
-        <div class="card-body">
-          <h6 class="text-muted">Blood Group</h6>
-          <h3><span v-text="patientInfo.blood_group || 'Not Set'"></span></h3>
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="bi bi-person-circle text-primary"></i>Welcome, <span v-text="patientInfo.name"></span>!</h2>
+            <p class="text-muted">
+                Manage your appointments and view your medical history
+                <a href="/patient/history" class="btn btn-sm btn-outline-primary ms-3">
+                    <i class="bi bi-clock-history"></i>View Full History
+                </a>
+            </p>
         </div>
-      </div>
     </div>
 
-    <div class="col-md-4 mb-3">
-      <div class="card stat-card success">
-        <div class="card-body">
-          <h6 class="text-muted">Upcoming Appointments</h6>
-          <h3><span v-text="upcomingAppointments.length"></span></h3>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-4 mb-3">
-      <div class="card stat-card warning">
-        <div class="card-body">
-          <h6 class="text-muted">Total Visits</h6>
-          <h3><span v-text="recentHistory.length"></span></h3>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Main Content -->
-  <div class="row">
-    <!-- Departments -->
-    <div class="col-lg-4 mb-4">
-      <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-          <i class="bi bi-hospital"></i> Departments
-        </div>
-        <div class="card-body" style="max-height: 500px; overflow-y: auto">
-          <div v-if="loading" class="text-center py-3">
-            <div class="spinner-border text-primary"></div>
-          </div>
-          <div v-else>
-            <div
-              v-for="dept in departments"
-              :key="dept.id"
-              class="card mb-2 cursor-pointer"
-              @click="selectDepartment(dept.id)"
-            >
-              <div class="card-body py-2">
-                <h6 class="mb-1" v-text="dept.name"></h6>
-                <small class="text-muted">
-                  <i class="bi bi-person-badge"></i>
-                  <span v-text="dept.doctors_count"></span> doctors
-                </small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Doctors -->
-    <div class="col-lg-4 mb-4">
-      <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-          <i class="bi bi-people"></i> Doctors
-        </div>
-        <div class="card-body" style="max-height: 500px; overflow-y: auto">
-          <div v-if="!selectedDepartment" class="text-center text-muted py-5">
-            <i class="bi bi-arrow-left" style="font-size: 2rem"></i>
-            <p>Select a department to view doctors</p>
-          </div>
-
-          <div v-else-if="loadingDoctors" class="text-center py-3">
-            <div class="spinner-border text-primary"></div>
-          </div>
-
-          <div v-else-if="doctors.length === 0" class="text-center text-muted py-5">
-            <i class="bi bi-exclamation-circle" style="font-size: 2rem"></i>
-            <p>No doctors available</p>
-          </div>
-
-          <div v-else>
-            <div v-for="doctor in doctors" :key="doctor.id" class="card mb-2">
-              <div class="card-body py-2">
-                <h6 class="mb-1" v-text="doctor.name"></h6>
-                <small class="text-muted d-block" v-text="doctor.qualification"></small>
-                <small class="text-muted">
-                  <i class="bi bi-briefcase"></i>
-                  <span v-text="doctor.experience_years"></span> years exp.
-                </small>
-                <div class="mt-2">
-                  <button
-                    class="btn btn-sm btn-primary w-100"
-                    @click="viewDoctorAvailability(doctor.id)"
-                  >
-                    <i class="bi bi-calendar-check"></i> Check Availability
-                  </button>
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card info">
+                <div class="card-body">
+                    <h6 class="text-muted">Blood Group</h6>
+                    <h3><span v-text="patientInfo.blood_group || 'Not Set'"></span></h3>
                 </div>
-              </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Appointments -->
-    <div class="col-lg-4 mb-4">
-      <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-          <i class="bi bi-calendar-event"></i> My Appointments
-        </div>
-        <div class="card-body" style="max-height: 500px; overflow-y: auto">
-          <div v-if="upcomingAppointments.length === 0" class="text-center text-muted py-3">
-            <i class="bi bi-calendar-x" style="font-size: 2rem"></i>
-            <p>No upcoming appointments</p>
-          </div>
-
-          <div v-else>
-            <div
-              v-for="apt in upcomingAppointments"
-              :key="apt.id"
-              class="card mb-2 border-start border-primary border-3"
-            >
-              <div class="card-body py-2">
-                <h6 class="mb-1" v-text="apt.doctor_name"></h6>
-                <small class="text-muted d-block" v-text="apt.department"></small>
-
-                <div class="mt-2">
-                  <small>
-                    <i class="bi bi-calendar"></i>
-                    <span v-text="formatDate(apt.date)"></span>
-                  </small>
-                  <small class="ms-2">
-                    <i class="bi bi-clock"></i>
-                    <span v-text="apt.time"></span>
-                  </small>
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card success">
+                <div class="card-body">
+                    <h6 class="text-muted">Upcoming Appointments</h6>
+                    <h3><span v-text="upcomingAppointments.length"></span></h3>
                 </div>
-
-                <button
-                  class="btn btn-sm btn-outline-primary w-100 mt-2 me-1"
-                  @click="viewAppointmentDetails(apt.id)"
-                >
-                  <i class="bi bi-eye"></i> View Details
-                </button>
-
-                <button
-                  class="btn btn-sm btn-outline-danger w-100 mt-2"
-                  @click="cancelAppointment(apt.id)"
-                >
-                  <i class="bi bi-x-circle"></i> Cancel
-                </button>
-              </div>
             </div>
-          </div>
         </div>
-      </div>
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card warning">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Visits</h6>
+                    <h3><span v-text="recentHistory.length"></span></h3>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Booking Modal -->
-  {% include "partials/patient_booking_modal.html" %}
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Left Column - Departments & Doctors -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-hospital"></i>Departments
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    <div v-if="loading" class="text-center py-3">
+                        <div class="spinner-border text-primary"></div>
+                    </div>
+                    <div v-else>
+                        <div v-for="dept in departments" :key="dept.id" 
+                             class="card mb-2 cursor-pointer"
+                             @click="selectDepartment(dept.id)">
+                            <div class="card-body py-2">
+                                <h6 class="mb-1" v-text="dept.name"></h6>
+                                <small class="text-muted">
+                                    <i class="bi bi-person-badge"></i>
+                                    <span v-text="dept.doctors_count"></span> doctors
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-  <!-- Appointment Details Modal -->
-  {% include "partials/patient_appointment_details_modal.html" %}
+        <!-- Middle Column - Doctors List -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-people"></i>Doctors
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    <div v-if="!selectedDepartment" class="text-center text-muted py-5">
+                        <i class="bi bi-arrow-left" style="font-size: 2rem;"></i>
+                        <p>Select a department to view doctors</p>
+                    </div>
+                    <div v-else-if="loadingDoctors" class="text-center py-3">
+                        <div class="spinner-border text-primary"></div>
+                    </div>
+                    <div v-else-if="doctors.length === 0" class="text-center text-muted py-5">
+                        <i class="bi bi-exclamation-circle" style="font-size: 2rem;"></i>
+                        <p>No doctors available</p>
+                    </div>
+                    <div v-else>
+                        <div v-for="doctor in doctors" :key="doctor.id" 
+                             class="card mb-2">
+                            <div class="card-body py-2">
+                                <h6 class="mb-1" v-text="doctor.name"></h6>
+                                <small class="text-muted d-block" v-text="doctor.qualification"></small>
+                                <small class="text-muted">
+                                    <i class="bi bi-briefcase"></i>
+                                    <span v-text="doctor.experience_years"></span> years exp.
+                                </small>
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-primary w-100" 
+                                            @click="viewDoctorAvailability(doctor.id)">
+                                        <i class="bi bi-calendar-check"></i>Check Availability
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Appointments -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-calendar-event"></i>My Appointments
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    <div v-if="upcomingAppointments.length === 0" class="text-center text-muted py-3">
+                        <i class="bi bi-calendar-x" style="font-size: 2rem;"></i>
+                        <p>No upcoming appointments</p>
+                    </div>
+                    <div v-else>
+                        <div v-for="apt in upcomingAppointments" :key="apt.id" 
+                             class="card mb-2 border-start border-primary border-3">
+                            <div class="card-body py-2">
+                                <h6 class="mb-1" v-text="apt.doctor_name"></h6>
+                                <small class="text-muted d-block" v-text="apt.department"></small>
+                                <div class="mt-2">
+                                    <small>
+                                        <i class="bi bi-calendar"></i>
+                                        <span v-text="formatDate(apt.date)"></span>
+                                    </small>
+                                    <small class="ms-2">
+                                        <i class="bi bi-clock"></i>
+                                        <span v-text="apt.time"></span>
+                                    </small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary w-100 mt-2 me-1" 
+                                        @click="viewAppointmentDetails(apt.id)">
+                                    <i class="bi bi-eye"></i>View Details
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger w-100 mt-2" 
+                                        @click="cancelAppointment(apt.id)">
+                                    <i class="bi bi-x-circle"></i>Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal fade" id="bookingModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-calendar-plus"></i>Book Appointment
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div v-if="loadingAvailability" class="text-center py-5">
+                        <div class="spinner-border text-primary"></div>
+                        <p class="mt-2">Loading availability...</p>
+                    </div>
+                    <div v-else-if="selectedDoctor">
+                        <h6>Doctor: <span v-text="selectedDoctor.name"></span></h6>
+                        <p class="text-muted" v-text="selectedDoctor.department"></p>
+                        
+                        <hr>
+                        
+                        <div v-if="availability.length === 0" class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            No available slots for the next 7 days
+                        </div>
+                        <div v-else>
+                            <h6 class="mb-3">Available Time Slots (Next 7 Days)</h6>
+                            <div v-for="slot in availability" :key="slot.id" class="mb-3">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <strong v-text="formatDate(slot.date)"></strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-2">
+                                            <div v-for="timeSlot in generateTimeSlots(slot)" 
+                                                 :key="timeSlot" 
+                                                 class="col-6 col-md-4">
+                                                <button class="btn btn-sm w-100" 
+                                                        :class="selectedSlot && selectedSlot.date === slot.date && selectedSlot.time === timeSlot 
+                                                            ? 'btn-primary' : 'btn-outline-primary'"
+                                                        @click="selectTimeSlot(slot.date, timeSlot)">
+                                                    <i class="bi bi-clock"></i>
+                                                    <span v-text="timeSlot"></span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div v-if="selectedSlot" class="mt-3">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    Selected: <strong v-text="formatDate(selectedSlot.date) + ' at ' + selectedSlot.time"></strong>
+                                </div>
+                                <label class="form-label">Reason for Visit</label>
+                                <textarea v-model="bookingReason" class="form-control" rows="3" 
+                                          placeholder="Describe your symptoms or reason for consultation"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" 
+                            :disabled="!selectedSlot || bookingLoading"
+                            @click="confirmBooking">
+                        <span v-if="bookingLoading" class="spinner-border spinner-border-sm me-2"></span>
+                        <span v-text="bookingLoading ? 'Booking...' : 'Confirm Booking'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointment Details Modal -->
+    <div class="modal fade" id="appointmentDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-clipboard-pulse"></i>Appointment Details
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" v-if="selectedAppointment">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6><strong>Doctor:</strong> <span v-text="selectedAppointment.appointment.doctor.name"></span></h6>
+                            <p class="mb-1"><strong>Department:</strong> <span v-text="selectedAppointment.appointment.doctor.department"></span></p>
+                            <p class="mb-1">
+                                <strong>Date:</strong> <span v-text="formatDate(selectedAppointment.appointment.date)"></span> | 
+                                <strong>Time:</strong> <span v-text="selectedAppointment.appointment.time"></span>
+                            </p>
+                            <p class="mb-1">
+                                <strong>Status:</strong> 
+                                <span class="badge" 
+                                      :class="{
+                                          'bg-primary': selectedAppointment.appointment.status === 'Booked',
+                                          'bg-success': selectedAppointment.appointment.status === 'Completed',
+                                          'bg-danger': selectedAppointment.appointment.status === 'Cancelled'
+                                      }" 
+                                      v-text="selectedAppointment.appointment.status"></span>
+                            </p>
+                            <p v-if="selectedAppointment.appointment.reason" class="mb-0">
+                                <strong>Reason:</strong> <span v-text="selectedAppointment.appointment.reason"></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Treatment Details -->
+                    <div v-if="selectedAppointment.treatment" class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-file-medical"></i>Treatment Details</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Diagnosis:</strong> <span v-text="selectedAppointment.treatment.diagnosis"></span></p>
+                            <p v-if="selectedAppointment.treatment.prescription">
+                                <strong>Prescription:</strong> <span v-text="selectedAppointment.treatment.prescription"></span>
+                            </p>
+                            <p v-if="selectedAppointment.treatment.notes">
+                                <strong>Notes:</strong> <span v-text="selectedAppointment.treatment.notes"></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Follow-up Alert -->
+                    <div v-if="selectedAppointment.treatment && selectedAppointment.treatment.follow_up_required" 
+                         class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Follow-up Required:</strong>
+                        <span v-if="selectedAppointment.treatment.follow_up_date">
+                            Please visit again on <strong v-text="formatDate(selectedAppointment.treatment.follow_up_date)"></strong>
+                        </span>
+                        <span v-else>Please schedule a follow-up appointment</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-  const { createApp } = Vue;
+const { createApp } = Vue;
 
-  createApp({
+createApp({
     data() {
-      return {
-        patientInfo: { name: "", blood_group: "", age: null },
-        upcomingAppointments: [],
-        recentHistory: [],
-        departments: [],
-        doctors: [],
-        availability: [],
-        selectedDepartment: null,
-        selectedDoctor: null,
-        selectedSlot: null,
-        selectedAppointment: null,
-        bookingReason: "",
-        loading: true,
-        loadingDoctors: false,
-        loadingAvailability: false,
-        bookingLoading: false,
-      };
+        return {
+            patientInfo: { name: '', blood_group: '', age: null },
+            upcomingAppointments: [],
+            recentHistory: [],
+            departments: [],
+            doctors: [],
+            availability: [],
+            selectedDepartment: null,
+            selectedDoctor: null,
+            selectedSlot: null,
+            selectedAppointment: null,
+            bookingReason: '',
+            loading: true,
+            loadingDoctors: false,
+            loadingAvailability: false,
+            bookingLoading: false
+        }
     },
-
     mounted() {
-      this.loadDashboard();
+        this.loadDashboard();
     },
-
     methods: {
-      async loadDashboard() {
-        try {
-          const response = await axios.get("/api/patient/dashboard");
-          this.patientInfo = response.data.patient_info;
-          this.upcomingAppointments = response.data.upcoming_appointments;
-          this.recentHistory = response.data.recent_history;
-          this.departments = response.data.departments;
-        } catch (error) {
-          console.error("Error loading dashboard:", error);
-          alert("Failed to load dashboard data");
-        } finally {
-          this.loading = false;
+        async loadDashboard() {
+            try {
+                const response = await axios.get('/api/patient/dashboard');
+                this.patientInfo = response.data.patient_info;
+                this.upcomingAppointments = response.data.upcoming_appointments;
+                this.recentHistory = response.data.recent_history;
+                this.departments = response.data.departments;
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                alert('Failed to load dashboard data');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        async selectDepartment(deptId) {
+            this.selectedDepartment = deptId;
+            this.loadingDoctors = true;
+            try {
+                const response = await axios.get(`/api/patient/doctors?department_id=${deptId}`);
+                this.doctors = response.data.doctors;
+            } catch (error) {
+                console.error('Error loading doctors:', error);
+            } finally {
+                this.loadingDoctors = false;
+            }
+        },
+        
+        async viewDoctorAvailability(doctorId) {
+            this.loadingAvailability = true;
+            const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
+            modal.show();
+            
+            try {
+                const response = await axios.get(`/api/patient/doctors/${doctorId}/availability`);
+                this.selectedDoctor = response.data.doctor;
+                this.availability = response.data.availability;
+            } catch (error) {
+                console.error('Error loading availability:', error);
+                alert('Failed to load doctor availability');
+            } finally {
+                this.loadingAvailability = false;
+            }
+        },
+        
+        generateTimeSlots(slot) {
+            // Generate 30-minute slots between start and end time
+            const slots = [];
+            const start = slot.start_time.split(':');
+            const end = slot.end_time.split(':');
+            
+            let currentHour = parseInt(start[0]);
+            let currentMinute = parseInt(start[1]);
+            const endHour = parseInt(end[0]);
+            const endMinute = parseInt(end[1]);
+            
+            while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+                const timeStr = String(currentHour).padStart(2, '0') + ':' + String(currentMinute).padStart(2, '0');
+                slots.push(timeStr);
+                
+                // Add 30 minutes
+                currentMinute += 30;
+                if (currentMinute >= 60) {
+                    currentMinute = 0;
+                    currentHour += 1;
+                }
+            }
+            
+            return slots;
+        },
+        
+        selectTimeSlot(date, time) {
+            this.selectedSlot = { date: date, time: time };
+        },
+        
+        async confirmBooking() {
+            if (!this.selectedSlot) {
+                alert('Please select a time slot');
+                return;
+            }
+            
+            this.bookingLoading = true;
+            try {
+                await axios.post('/api/patient/appointments/book', {
+                    doctor_id: this.selectedDoctor.id,
+                    appointment_date: this.selectedSlot.date,
+                    appointment_time: this.selectedSlot.time,
+                    reason_for_visit: this.bookingReason
+                });
+                
+                alert('Appointment booked successfully!');
+                bootstrap.Modal.getInstance(document.getElementById('bookingModal')).hide();
+                this.loadDashboard();
+                this.resetBooking();
+            } catch (error) {
+                alert(error.response?.data?.error || 'Failed to book appointment');
+            } finally {
+                this.bookingLoading = false;
+            }
+        },
+        
+        async viewAppointmentDetails(aptId) {
+            try {
+                const response = await axios.get(`/api/patient/appointments/${aptId}`);
+                this.selectedAppointment = response.data;
+                new bootstrap.Modal(document.getElementById('appointmentDetailsModal')).show();
+            } catch (error) {
+                alert('Failed to load appointment details');
+            }
+        },
+        
+        async cancelAppointment(aptId) {
+            if (!confirm('Are you sure you want to cancel this appointment?')) return;
+            
+            try {
+                await axios.post(`/api/patient/appointments/${aptId}/cancel`);
+                alert('Appointment cancelled successfully');
+                this.loadDashboard();
+            } catch (error) {
+                alert(error.response?.data?.error || 'Failed to cancel appointment');
+            }
+        },
+        
+        resetBooking() {
+            this.selectedSlot = null;
+            this.bookingReason = '';
+        },
+        
+        formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString('en-IN', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+        },
+        
+        async logout() {
+            try {
+                await axios.post('/api/auth/logout');
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
         }
-      },
-
-      async selectDepartment(deptId) {
-        this.selectedDepartment = deptId;
-        this.loadingDoctors = true;
-        try {
-          const response = await axios.get(
-            `/api/patient/doctors?department_id=${deptId}`
-          );
-          this.doctors = response.data.doctors;
-        } catch (error) {
-          console.error("Error loading doctors:", error);
-        } finally {
-          this.loadingDoctors = false;
-        }
-      },
-
-      async viewDoctorAvailability(doctorId) {
-        this.loadingAvailability = true;
-        const modal = new bootstrap.Modal(
-          document.getElementById("bookingModal")
-        );
-        modal.show();
-
-        try {
-          const response = await axios.get(
-            `/api/patient/doctors/${doctorId}/availability`
-          );
-          this.selectedDoctor = response.data.doctor;
-          this.availability = response.data.availability;
-        } catch (error) {
-          console.error("Error loading availability:", error);
-          alert("Failed to load doctor availability");
-        } finally {
-          this.loadingAvailability = false;
-        }
-      },
-
-      generateTimeSlots(slot) {
-        const slots = [];
-        const start = slot.start_time.split(":");
-        const end = slot.end_time.split(":");
-
-        let currentHour = parseInt(start[0]);
-        let currentMinute = parseInt(start[1]);
-        const endHour = parseInt(end[0]);
-        const endMinute = parseInt(end[1]);
-
-        while (
-          currentHour < endHour ||
-          (currentHour === endHour && currentMinute < endMinute)
-        ) {
-          const timeStr = `${String(currentHour).padStart(2, "0")}:${String(
-            currentMinute
-          ).padStart(2, "0")}`;
-          slots.push(timeStr);
-
-          currentMinute += 30;
-          if (currentMinute >= 60) {
-            currentMinute = 0;
-            currentHour += 1;
-          }
-        }
-
-        return slots;
-      },
-
-      selectTimeSlot(date, time) {
-        const slot = this.availability.find((s) => s.date === date);
-        if (slot && this.isSlotOccupied(slot, time)) return;
-        this.selectedSlot = { date, time };
-      },
-
-      isSlotOccupied(slot, timeSlot) {
-        if (slot.occupied_times && Array.isArray(slot.occupied_times)) {
-          return slot.occupied_times.includes(timeSlot);
-        }
-        return false;
-      },
-
-      async confirmBooking() {
-        if (!this.selectedSlot) {
-          alert("Please select a time slot");
-          return;
-        }
-
-        this.bookingLoading = true;
-        try {
-          await axios.post("/api/patient/appointments/book", {
-            doctor_id: this.selectedDoctor.id,
-            appointment_date: this.selectedSlot.date,
-            appointment_time: this.selectedSlot.time,
-            reason_for_visit: this.bookingReason,
-          });
-
-          alert("Appointment booked successfully!");
-          bootstrap.Modal.getInstance(
-            document.getElementById("bookingModal")
-          ).hide();
-          this.loadDashboard();
-          this.resetBooking();
-        } catch (error) {
-          alert(error.response?.data?.error || "Failed to book appointment");
-        } finally {
-          this.bookingLoading = false;
-        }
-      },
-
-      async viewAppointmentDetails(aptId) {
-        try {
-          const response = await axios.get(
-            `/api/patient/appointments/${aptId}`
-          );
-          this.selectedAppointment = response.data;
-          new bootstrap.Modal(
-            document.getElementById("appointmentDetailsModal")
-          ).show();
-        } catch (error) {
-          alert("Failed to load appointment details");
-        }
-      },
-
-      async cancelAppointment(aptId) {
-        if (!confirm("Are you sure you want to cancel this appointment?"))
-          return;
-
-        try {
-          await axios.post(`/api/patient/appointments/${aptId}/cancel`);
-          alert("Appointment cancelled successfully");
-          this.loadDashboard();
-        } catch (error) {
-          alert(error.response?.data?.error || "Failed to cancel appointment");
-        }
-      },
-
-      resetBooking() {
-        this.selectedSlot = null;
-        this.bookingReason = "";
-      },
-
-      formatDate(dateStr) {
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        });
-      },
-
-      async logout() {
-        try {
-          await axios.post("/api/auth/logout");
-          window.location.href = "/";
-        } catch (error) {
-          console.error("Logout error:", error);
-        }
-      },
-    },
-  }).mount("#app");
+    }
+}).mount('#app');
 </script>
 {% endblock %}
