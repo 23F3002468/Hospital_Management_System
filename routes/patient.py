@@ -107,7 +107,7 @@ def search_doctors():
 @patient_bp.route('/doctors/<int:doctor_id>/availability', methods=['GET'])
 @patient_required
 def get_doctor_availability(doctor_id):
-    """Get doctor's availability for next 7 days"""
+    """Get doctor's availability for next 7 days with booked slots info"""
     try:
         doctor = Doctor.query.get_or_404(doctor_id)
         
@@ -120,6 +120,20 @@ def get_doctor_availability(doctor_id):
             DoctorAvailability.date <= next_7_days,
             DoctorAvailability.is_available == True
         ).order_by(DoctorAvailability.date, DoctorAvailability.start_time).all()
+        
+        # Get all booked appointments for this doctor in the next 7 days
+        booked_appointments = Appointment.query.filter(
+            Appointment.doctor_id == doctor_id,
+            Appointment.appointment_date >= today,
+            Appointment.appointment_date <= next_7_days,
+            Appointment.status == 'Booked'
+        ).all()
+        
+        # Create a set of booked slots (date + time)
+        booked_slots = set()
+        for apt in booked_appointments:
+            slot_key = f"{apt.appointment_date.isoformat()}_{apt.appointment_time.strftime('%H:%M')}"
+            booked_slots.add(slot_key)
         
         return jsonify({
             'doctor': {
@@ -134,12 +148,12 @@ def get_doctor_availability(doctor_id):
                 'end_time': slot.end_time.strftime('%H:%M'),
                 'slots_available': slot.slots_available,
                 'booked_count': slot.booked_appointments_count
-            } for slot in availability]
+            } for slot in availability],
+            'booked_slots': list(booked_slots)  # Send list of booked slot keys
         }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @patient_bp.route('/appointments/book', methods=['POST'])
 @patient_required

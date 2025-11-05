@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}Doctor Dashboard - HMS{% endblock %}
-
 {% block content %}
 <div id="app" class="container-fluid py-4">
     <!-- Header -->
@@ -11,7 +9,6 @@
             <p class="text-muted"><span v-text="doctorInfo.department"></span> | <span v-text="doctorInfo.qualification"></span></p>
         </div>
     </div>
-
     <!-- Statistics -->
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
@@ -47,7 +44,6 @@
             </div>
         </div>
     </div>
-
     <!-- Main Content -->
     <div class="row">
         <!-- Left: Today's Schedule -->
@@ -56,18 +52,17 @@
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-calendar-day"></i> Today's Schedule</span>
                     <button class="btn btn-light btn-sm" @click="showAvailabilityModal">
-                        <i class="bi bi-clock"></i> Set Availability
+                    <i class="bi bi-clock"></i> Set Availability
                     </button>
                 </div>
                 <div class="card-body" style="max-height: 500px; overflow-y: auto;">
                     <!-- View Availability Button -->
                     <div class="mb-3">
                         <button class="btn btn-sm btn-outline-primary w-100" @click="viewMyAvailability">
-                            <i class="bi bi-calendar-week"></i> 
-                            <span v-text="showingAvailability ? 'Hide My Availability' : 'View My Availability (Next 7 Days)'"></span>
+                        <i class="bi bi-calendar-week"></i> 
+                        <span v-text="showingAvailability ? 'Hide My Availability' : 'View My Availability (Next 7 Days)'"></span>
                         </button>
                     </div>
-                    
                     <!-- My Availability Display -->
                     <div v-if="showingAvailability" class="mb-3">
                         <h6>My Availability Slots</h6>
@@ -85,19 +80,17 @@
                                             <strong v-text="formatDate(slot.date)"></strong><br>
                                             <small><span v-text="slot.start_time"></span> - <span v-text="slot.end_time"></span></small><br>
                                             <small class="text-muted">
-                                                Booked: <span v-text="slot.booked_count"></span> / <span v-text="slot.max_appointments"></span>
+                                            Booked: <span v-text="slot.booked_count"></span> / <span v-text="slot.max_appointments"></span>
                                             </small>
                                         </div>
                                         <span class="badge" :class="slot.is_available ? 'bg-success' : 'bg-secondary'" 
-                                              v-text="slot.is_available ? 'Available' : 'Unavailable'"></span>
+                                            v-text="slot.is_available ? 'Available' : 'Unavailable'"></span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
                     <hr>
-                    
                     <!-- Today's Appointments -->
                     <h6>Today's Appointments</h6>
                     <div v-if="loadingSchedule" class="text-center py-5">
@@ -114,15 +107,15 @@
                                     <div>
                                         <h6 class="mb-1"><span v-text="apt.patient_name"></span></h6>
                                         <small class="text-muted d-block">
-                                            Age: <span v-text="apt.patient_age || 'N/A'"></span> | 
-                                            Blood: <span v-text="apt.patient_blood_group || 'N/A'"></span>
+                                        Age: <span v-text="apt.patient_age || 'N/A'"></span> | 
+                                        Blood: <span v-text="apt.patient_blood_group || 'N/A'"></span>
                                         </small>
                                         <small class="text-muted">
-                                            <i class="bi bi-clock"></i> <span v-text="apt.time"></span>
+                                        <i class="bi bi-clock"></i> <span v-text="apt.time"></span>
                                         </small>
                                     </div>
                                     <button class="btn btn-sm btn-primary" @click="viewAppointmentDetails(apt.id)">
-                                        <i class="bi bi-eye"></i>
+                                    <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
                                 <div class="mt-2" v-if="apt.reason">
@@ -134,7 +127,6 @@
                 </div>
             </div>
         </div>
-
         <!-- Right: All Appointments -->
         <div class="col-lg-6 mb-4">
             <div class="card shadow-sm">
@@ -153,7 +145,64 @@
                             </select>
                         </div>
                     </div>
-
+                    <!-- My Patients Section -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-people"></i>My Patients</span>
+                                    <span class="badge bg-light text-primary" v-text="patients.length"></span>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Search -->
+                                    <div class="mb-3">
+                                        <input type="text" class="form-control" v-model="patientSearch" 
+                                            placeholder="Search patients by name..." @input="searchMyPatients">
+                                    </div>
+                                    <!-- Patients List -->
+                                    <div class="row">
+                                        <div v-if="loadingPatients" class="text-center py-3">
+                                            <div class="spinner-border text-primary"></div>
+                                        </div>
+                                        <div v-else-if="patients.length === 0" class="text-center text-muted py-3">
+                                            No patients assigned yet
+                                        </div>
+                                        <div v-else class="col-12">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Name</th>
+                                                            <th>Age</th>
+                                                            <th>Blood Group</th>
+                                                            <th>Phone</th>
+                                                            <th>Last Visit</th>
+                                                            <th>Action</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr v-for="patient in patients" :key="patient.id">
+                                                            <td v-text="patient.name"></td>
+                                                            <td v-text="patient.age || 'N/A'"></td>
+                                                            <td v-text="patient.blood_group || 'N/A'"></td>
+                                                            <td v-text="patient.phone"></td>
+                                                            <td v-text="patient.last_visit ? formatDate(patient.last_visit) : 'No visits'"></td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-outline-primary" 
+                                                                    @click="viewPatientHistory(patient.id)">
+                                                                <i class="bi bi-clock-history"></i>History
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Appointments List -->
                     <div style="max-height: 400px; overflow-y: auto;">
                         <div v-if="loadingAppointments" class="text-center py-3">
@@ -169,21 +218,21 @@
                                         <div>
                                             <h6 class="mb-0"><span v-text="apt.patient_name"></span></h6>
                                             <small class="text-muted">
-                                                <i class="bi bi-calendar"></i> <span v-text="formatDate(apt.date)"></span> 
-                                                <i class="bi bi-clock ms-2"></i> <span v-text="apt.time"></span>
+                                            <i class="bi bi-calendar"></i> <span v-text="formatDate(apt.date)"></span> 
+                                            <i class="bi bi-clock ms-2"></i> <span v-text="apt.time"></span>
                                             </small>
                                             <br>
                                             <span class="badge mt-1" 
-                                                  :class="{
-                                                      'bg-primary': apt.status === 'Booked',
-                                                      'bg-success': apt.status === 'Completed',
-                                                      'bg-danger': apt.status === 'Cancelled'
-                                                  }" 
-                                                  v-text="apt.status"></span>
+                                                :class="{
+                                                'bg-primary': apt.status === 'Booked',
+                                                'bg-success': apt.status === 'Completed',
+                                                'bg-danger': apt.status === 'Cancelled'
+                                                }" 
+                                                v-text="apt.status"></span>
                                         </div>
                                         <button class="btn btn-sm btn-outline-primary" 
-                                                @click="viewAppointmentDetails(apt.id)">
-                                            View
+                                            @click="viewAppointmentDetails(apt.id)">
+                                        View
                                         </button>
                                     </div>
                                 </div>
@@ -194,7 +243,6 @@
             </div>
         </div>
     </div>
-
     <!-- Appointment Details Modal -->
     <div class="modal fade" id="appointmentModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -227,24 +275,21 @@
                             </div>
                         </div>
                     </div>
-
                     <!-- Appointment Info -->
                     <div class="mb-3">
                         <strong>Date:</strong> <span v-text="formatDate(selectedAppointment.appointment.date)"></span> | 
                         <strong>Time:</strong> <span v-text="selectedAppointment.appointment.time"></span> |
                         <strong>Status:</strong> 
                         <span class="badge" 
-                              :class="{
-                                  'bg-primary': selectedAppointment.appointment.status === 'Booked',
-                                  'bg-success': selectedAppointment.appointment.status === 'Completed'
-                              }" 
-                              v-text="selectedAppointment.appointment.status"></span>
+                            :class="{
+                            'bg-primary': selectedAppointment.appointment.status === 'Booked',
+                            'bg-success': selectedAppointment.appointment.status === 'Completed'
+                            }" 
+                            v-text="selectedAppointment.appointment.status"></span>
                     </div>
-
                     <div class="mb-3" v-if="selectedAppointment.appointment.reason">
                         <strong>Reason for Visit:</strong> <span v-text="selectedAppointment.appointment.reason"></span>
                     </div>
-
                     <!-- Treatment Form -->
                     <div v-if="selectedAppointment.appointment.status === 'Booked'">
                         <hr>
@@ -272,7 +317,6 @@
                             </div>
                         </form>
                     </div>
-
                     <!-- Existing Treatment -->
                     <div v-else-if="selectedAppointment.treatment">
                         <hr>
@@ -292,17 +336,16 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <button v-if="selectedAppointment && selectedAppointment.appointment.status === 'Booked'" 
-                            type="button" class="btn btn-primary" 
-                            @click="completeTreatment"
-                            :disabled="savingTreatment">
-                        <span v-if="savingTreatment" class="spinner-border spinner-border-sm me-2"></span>
-                        <span v-text="savingTreatment ? 'Saving...' : 'Complete & Save'"></span>
+                        type="button" class="btn btn-primary" 
+                        @click="completeTreatment"
+                        :disabled="savingTreatment">
+                    <span v-if="savingTreatment" class="spinner-border spinner-border-sm me-2"></span>
+                    <span v-text="savingTreatment ? 'Saving...' : 'Complete & Save'"></span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
-
     <!-- Set Availability Modal -->
     <div class="modal fade" id="availabilityModal" tabindex="-1">
         <div class="modal-dialog">
@@ -339,174 +382,211 @@
         </div>
     </div>
 </div>
-
 {% endblock %}
-
 {% block scripts %}
 <script>
-const { createApp } = Vue;
-
-createApp({
-    data() {
-        return {
-            doctorInfo: { name: '', department: '', qualification: '' },
-            stats: { today_appointments: 0, week_appointments: 0, total_patients_treated: 0, completed_appointments: 0 },
-            todaySchedule: [],
-            appointments: [],
-            myAvailability: [],
-            selectedAppointment: null,
-            appointmentFilter: '',
-            loadingSchedule: true,
-            loadingAppointments: false,
-            loadingAvailability: false,
-            showingAvailability: false,
-            savingTreatment: false,
-            treatmentForm: { diagnosis: '', prescription: '', notes: '', follow_up_required: false, follow_up_date: '' },
-            availabilityForm: { date: '', start_time: '09:00', end_time: '17:00', max_appointments: 10 }
-        }
-    },
-    mounted() {
-        this.loadDashboard();
-    },
-    methods: {
-        async loadDashboard() {
-            try {
-                const response = await axios.get('/api/doctor/dashboard');
-                this.doctorInfo = response.data.doctor_info;
-                this.stats = response.data.statistics;
-                this.todaySchedule = response.data.today_schedule;
-            } catch (error) {
-                console.error('Error loading dashboard:', error);
-            } finally {
-                this.loadingSchedule = false;
+    const { createApp } = Vue;
+    
+    createApp({
+        data() {
+            return {
+                doctorInfo: { name: '', department: '', qualification: '' },
+                stats: { today_appointments: 0, week_appointments: 0, total_patients_treated: 0, completed_appointments: 0 },
+                todaySchedule: [],
+                appointments: [],
+                myAvailability: [],
+                patients: [],
+                patientSearch: '',
+                loadingPatients: false,
+                selectedAppointment: null,
+                appointmentFilter: '',
+                loadingSchedule: true,
+                loadingAppointments: false,
+                loadingAvailability: false,
+                showingAvailability: false,
+                savingTreatment: false,
+                treatmentForm: { diagnosis: '', prescription: '', notes: '', follow_up_required: false, follow_up_date: '' },
+                availabilityForm: { date: '', start_time: '09:00', end_time: '17:00', max_appointments: 10 }
             }
         },
-        
-        async viewMyAvailability() {
-            this.showingAvailability = !this.showingAvailability;
-            if (this.showingAvailability && this.myAvailability.length === 0) {
-                await this.loadMyAvailability();
-            }
+        mounted() {
+            this.loadDashboard();
+            this.loadMyPatients();
         },
-        
-        async loadMyAvailability() {
-            this.loadingAvailability = true;
-            try {
-                const response = await axios.get('/api/doctor/availability');
-                this.myAvailability = response.data.availability;
-            } catch (error) {
-                console.error('Error loading availability:', error);
-            } finally {
-                this.loadingAvailability = false;
-            }
-        },
-        
-        async loadAppointments() {
-            this.loadingAppointments = true;
-            try {
-                let url = '/api/doctor/appointments?';
-                if (this.appointmentFilter) url += `status=${this.appointmentFilter}`;
-                
-                const response = await axios.get(url);
-                this.appointments = response.data.appointments;
-            } catch (error) {
-                console.error('Error loading appointments:', error);
-            } finally {
-                this.loadingAppointments = false;
-            }
-        },
-        
-        async viewAppointmentDetails(aptId) {
-            try {
-                const response = await axios.get(`/api/doctor/appointments/${aptId}`);
-                this.selectedAppointment = response.data;
-                this.resetTreatmentForm();
-                new bootstrap.Modal(document.getElementById('appointmentModal')).show();
-            } catch (error) {
-                alert('Failed to load appointment details');
-            }
-        },
-        
-        async completeTreatment() {
-            if (!this.treatmentForm.diagnosis) {
-                alert('Diagnosis is required');
-                return;
-            }
+        methods: {
+            async loadDashboard() {
+                try {
+                    const response = await axios.get('/api/doctor/dashboard');
+                    this.doctorInfo = response.data.doctor_info;
+                    this.stats = response.data.statistics;
+                    this.todaySchedule = response.data.today_schedule;
+                } catch (error) {
+                    console.error('Error loading dashboard:', error);
+                } finally {
+                    this.loadingSchedule = false;
+                }
+            },
             
-            this.savingTreatment = true;
-            try {
-                await axios.post(
-                    `/api/doctor/appointments/${this.selectedAppointment.appointment.id}/complete`,
-                    this.treatmentForm
-                );
-                alert('Treatment saved and appointment completed!');
-                bootstrap.Modal.getInstance(document.getElementById('appointmentModal')).hide();
-                this.loadDashboard();
-                this.loadAppointments();
-            } catch (error) {
-                alert(error.response?.data?.error || 'Failed to complete appointment');
-            } finally {
-                this.savingTreatment = false;
-            }
-        },
-        
-        showAvailabilityModal() {
-            const today = new Date().toISOString().split('T')[0];
-            this.availabilityForm.date = today;
-            new bootstrap.Modal(document.getElementById('availabilityModal')).show();
-        },
-        
-        async saveAvailability() {
-            try {
-                await axios.post('/api/doctor/availability/set', this.availabilityForm);
-                alert('Availability set successfully!');
-                bootstrap.Modal.getInstance(document.getElementById('availabilityModal')).hide();
-                this.myAvailability = []; // Clear to force reload
-                if (this.showingAvailability) {
+            async viewMyAvailability() {
+                this.showingAvailability = !this.showingAvailability;
+                if (this.showingAvailability && this.myAvailability.length === 0) {
                     await this.loadMyAvailability();
                 }
-            } catch (error) {
-                alert(error.response?.data?.error || 'Failed to set availability');
-            }
-        },
-        
-        resetTreatmentForm() {
-            this.treatmentForm = {
-                diagnosis: '',
-                prescription: '',
-                notes: '',
-                follow_up_required: false,
-                follow_up_date: ''
-            };
-        },
-        
-        formatDate(dateStr) {
-            return new Date(dateStr).toLocaleDateString('en-IN', { 
-                day: 'numeric', 
-                month: 'short', 
-                year: 'numeric' 
-            });
-        },
-        
-        async logout() {
-            try {
-                await axios.post('/api/auth/logout');
-                window.location.href = '/';
-            } catch (error) {
-                console.error('Logout error:', error);
-            }
-        }
-    },
-    watch: {
-        appointmentFilter() {
-            if (!this.loadingAppointments) {
-                this.loadAppointments();
-            }
-        }
-    },
-    created() {
-        this.loadAppointments();
+            },
+            
+            async loadMyAvailability() {
+                this.loadingAvailability = true;
+                try {
+                    const response = await axios.get('/api/doctor/availability');
+                    this.myAvailability = response.data.availability;
+                } catch (error) {
+                    console.error('Error loading availability:', error);
+                } finally {
+                    this.loadingAvailability = false;
+                }
+            },
+            
+            async loadAppointments() {
+                this.loadingAppointments = true;
+                try {
+                    let url = '/api/doctor/appointments?';
+                    if (this.appointmentFilter) url += `status=${this.appointmentFilter}`;
+                    
+                    const response = await axios.get(url);
+                    this.appointments = response.data.appointments;
+                } catch (error) {
+                    console.error('Error loading appointments:', error);
+                } finally {
+                    this.loadingAppointments = false;
+                }
+            },
+            
+            async viewAppointmentDetails(aptId) {
+                try {
+                    const response = await axios.get(`/api/doctor/appointments/${aptId}`);
+                    this.selectedAppointment = response.data;
+                    this.resetTreatmentForm();
+                    new bootstrap.Modal(document.getElementById('appointmentModal')).show();
+                } catch (error) {
+                    alert('Failed to load appointment details');
+                }
+            },
+            
+            async loadMyPatients() {
+    this.loadingPatients = true;
+    try {
+        const response = await axios.get('/api/doctor/patients');
+        this.patients = response.data.patients;
+    } catch (error) {
+        console.error('Error loading patients:', error);
+    } finally {
+        this.loadingPatients = false;
     }
-}).mount('#app');
+    },
+    
+    async searchMyPatients() {
+    this.loadingPatients = true;
+    try {
+        const response = await axios.get(`/api/doctor/patients?search=${this.patientSearch}`);
+        this.patients = response.data.patients;
+    } catch (error) {
+        console.error('Error searching patients:', error);
+    } finally {
+        this.loadingPatients = false;
+    }
+    },
+    
+    async viewPatientHistory(patientId) {
+    try {
+        const response = await axios.get(`/api/doctor/patients/${patientId}/history`);
+        // Show patient history in a modal or new view
+        alert(`Patient history loaded. Showing ${response.data.appointment_history.length} appointments.`);
+        // You can create a modal to display this data nicely
+    } catch (error) {
+        alert('Failed to load patient history');
+    }
+    },
+    
+            async completeTreatment() {
+                if (!this.treatmentForm.diagnosis) {
+                    alert('Diagnosis is required');
+                    return;
+                }
+                
+                this.savingTreatment = true;
+                try {
+                    await axios.post(
+                        `/api/doctor/appointments/${this.selectedAppointment.appointment.id}/complete`,
+                        this.treatmentForm
+                    );
+                    alert('Treatment saved and appointment completed!');
+                    bootstrap.Modal.getInstance(document.getElementById('appointmentModal')).hide();
+                    this.loadDashboard();
+                    this.loadAppointments();
+                } catch (error) {
+                    alert(error.response?.data?.error || 'Failed to complete appointment');
+                } finally {
+                    this.savingTreatment = false;
+                }
+            },
+            
+            showAvailabilityModal() {
+                const today = new Date().toISOString().split('T')[0];
+                this.availabilityForm.date = today;
+                new bootstrap.Modal(document.getElementById('availabilityModal')).show();
+            },
+            
+            async saveAvailability() {
+                try {
+                    await axios.post('/api/doctor/availability/set', this.availabilityForm);
+                    alert('Availability set successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('availabilityModal')).hide();
+                    this.myAvailability = []; // Clear to force reload
+                    if (this.showingAvailability) {
+                        await this.loadMyAvailability();
+                    }
+                } catch (error) {
+                    alert(error.response?.data?.error || 'Failed to set availability');
+                }
+            },
+            
+            resetTreatmentForm() {
+                this.treatmentForm = {
+                    diagnosis: '',
+                    prescription: '',
+                    notes: '',
+                    follow_up_required: false,
+                    follow_up_date: ''
+                };
+            },
+            
+            formatDate(dateStr) {
+                return new Date(dateStr).toLocaleDateString('en-IN', { 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: 'numeric' 
+                });
+            },
+            
+            async logout() {
+                try {
+                    await axios.post('/api/auth/logout');
+                    window.location.href = '/';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                }
+            }
+        },
+        watch: {
+            appointmentFilter() {
+                if (!this.loadingAppointments) {
+                    this.loadAppointments();
+                }
+            }
+        },
+        created() {
+            this.loadAppointments();
+        }
+    }).mount('#app');
 </script>
 {% endblock %}

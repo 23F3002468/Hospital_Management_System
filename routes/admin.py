@@ -143,7 +143,7 @@ def get_doctor_details(doctor_id):
 @admin_bp.route('/doctors/add', methods=['POST'])
 @admin_required
 def add_doctor():
-    """Add a new doctor"""
+    """Add a new doctor or reactivate existing one"""
     try:
         data = request.get_json()
         
@@ -152,20 +152,72 @@ def add_doctor():
         if not all(data.get(field) for field in required):
             return jsonify({'error': 'Missing required fields'}), 400
         
-        # Check if username exists
-        if User.query.filter_by(username=data['username']).first():
-            return jsonify({'error': 'Username already exists'}), 400
-        
-        # Check if email exists
-        if User.query.filter_by(email=data['email']).first():
-            return jsonify({'error': 'Email already exists'}), 400
-        
         # Check if department exists
         department = Department.query.get(data['department_id'])
         if not department:
             return jsonify({'error': 'Department not found'}), 404
         
-        # Create user account
+        # Check if user already exists (active or inactive)
+        existing_user_by_username = User.query.filter_by(username=data['username']).first()
+        existing_user_by_email = User.query.filter_by(email=data['email']).first()
+        
+        # If username exists
+        if existing_user_by_username:
+            if existing_user_by_username.is_active:
+                return jsonify({'error': 'Username already exists'}), 400
+            else:
+                # Reactivate existing inactive user
+                existing_user_by_username.is_active = True
+                existing_user_by_username.email = data['email']
+                existing_user_by_username.full_name = data['full_name']
+                existing_user_by_username.phone = data['phone']
+                existing_user_by_username.address = data.get('address', '')
+                # Update password if provided
+                if data.get('password'):
+                    from werkzeug.security import generate_password_hash
+                    existing_user_by_username.password = generate_password_hash(data['password'])
+                
+                # Update doctor profile if exists
+                if hasattr(existing_user_by_username, 'doctor_profile'):
+                    doctor_profile = existing_user_by_username.doctor_profile
+                    doctor_profile.department_id = data['department_id']
+                    doctor_profile.qualification = data.get('qualification', '')
+                    doctor_profile.experience_years = data.get('experience_years', 0)
+                    doctor_profile.consultation_fee = data.get('consultation_fee', 0.0)
+                    doctor_profile.bio = data.get('bio', '')
+                else:
+                    # Create new doctor profile
+                    new_doctor = Doctor(
+                        user_id=existing_user_by_username.id,
+                        department_id=data['department_id'],
+                        qualification=data.get('qualification', ''),
+                        experience_years=data.get('experience_years', 0),
+                        consultation_fee=data.get('consultation_fee', 0.0),
+                        bio=data.get('bio', ''),
+                        created_at=datetime.utcnow()
+                    )
+                    db.session.add(new_doctor)
+                
+                db.session.commit()
+                
+                return jsonify({
+                    'message': 'Doctor reactivated successfully',
+                    'doctor': {
+                        'id': existing_user_by_username.doctor_profile.id,
+                        'name': existing_user_by_username.full_name,
+                        'department': department.name
+                    }
+                }), 201
+        
+        # If email exists but different username
+        if existing_user_by_email and existing_user_by_email.username != data['username']:
+            if existing_user_by_email.is_active:
+                return jsonify({'error': 'Email already in use'}), 400
+            else:
+                return jsonify({'error': 'Email belongs to an inactive user. Please use a different email or reactivate the existing user.'}), 400
+        
+        # Create new user account
+        from werkzeug.security import generate_password_hash
         new_user = User(
             username=data['username'],
             email=data['email'],
@@ -207,7 +259,6 @@ def add_doctor():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
 
 @admin_bp.route('/doctors/<int:doctor_id>', methods=['PUT'])
 @admin_required
@@ -381,6 +432,47 @@ def get_patient_details(patient_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@admin_bp.route('/patients/<int:patient_id>', methods=['PUT'])
+@admin_required
+def update_patient(patient_id):
+    """Update patient information"""
+    try:
+        patient = Patient.query.get_or_404(patient_id)
+        data = request.get_json()
+        
+        # Update user fields
+        if data.get('full_name'):
+            patient.user.full_name = data['full_name']
+        if data.get('email'):
+            # Check if email is taken by another user
+            existing = User.query.filter_by(email=data['email']).first()
+            if existing and existing.id != patient.user_id:
+                return jsonify({'error': 'Email already in use'}), 400
+            patient.user.email = data['email']
+        if data.get('phone'):
+            patient.user.phone = data['phone']
+        if 'address' in data:
+            patient.user.address = data['address']
+        
+        # Update patient fields
+        if 'date_of_birth' in data and data['date_of_birth']:
+            patient.date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d').date()
+        if 'blood_group' in data:
+            patient.blood_group = data['blood_group']
+        if 'emergency_contact' in data:
+            patient.emergency_contact = data['emergency_contact']
+        if 'medical_history' in data:
+            patient.medical_history = data['medical_history']
+        if 'allergies' in data:
+            patient.allergies = data['allergies']
+        
+        db.session.commit()
+        
+        return jsonify({'message': 'Patient updated successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @admin_bp.route('/patients/<int:patient_id>/toggle-status', methods=['POST'])
 @admin_required
@@ -432,10 +524,17 @@ def get_all_appointments():
         if patient_id:
             query = query.filter(Appointment.patient_id == patient_id)
         
-        appointments = query.order_by(
-            Appointment.appointment_date.desc(),
-            Appointment.appointment_time.desc()
-        ).all()
+        # Get recent appointments if no filters (default view)
+        if not any([status, date_from, date_to, doctor_id, patient_id]):
+            appointments = query.order_by(
+                Appointment.appointment_date.desc(),
+                Appointment.appointment_time.desc()
+            ).limit(50).all()  # Show last 50 by default
+        else:
+            appointments = query.order_by(
+                Appointment.appointment_date.desc(),
+                Appointment.appointment_time.desc()
+            ).all()
         
         return jsonify({
             'appointments': [{
@@ -454,7 +553,6 @@ def get_all_appointments():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @admin_bp.route('/departments', methods=['GET'])
 @admin_required
