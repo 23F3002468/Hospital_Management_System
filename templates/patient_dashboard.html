@@ -6,17 +6,21 @@
 <div id="app" class="container-fluid py-4">
     <!-- Welcome Section -->
     <div class="row mb-4">
-        <div class="col-12">
-            <h2>
-                <i class="bi bi-person-circle text-primary"></i>
-                Welcome, <span v-text="patientInfo.name"></span>!
-            </h2>
-            <p class="text-muted">
-                Manage your appointments and view your medical history
-                <a href="/patient/history" class="btn btn-sm btn-outline-primary ms-3">
-                    <i class="bi bi-clock-history"></i> View Full History
-                </a>
-            </p>
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="bi bi-person-circle text-primary"></i> Welcome, <span v-text="patientInfo.name"></span>!</h2>
+                <p class="text-muted">
+                    Manage your appointments and view your medical history
+                    <a href="/patient/history" class="btn btn-sm btn-outline-primary ms-3">
+                        <i class="bi bi-clock-history"></i> View Full History
+                    </a>
+                </p>
+            </div>
+            <div>
+                <button class="btn btn-primary" @click="showEditProfileModal">
+                    <i class="bi bi-pencil-square"></i> Edit Profile
+                </button>
+            </div>
         </div>
     </div>
 
@@ -62,8 +66,8 @@
                     </div>
                     <div v-else>
                         <div v-for="dept in departments" :key="dept.id"
-                             class="card mb-2 cursor-pointer"
-                             @click="selectDepartment(dept.id)">
+                            class="card mb-2 cursor-pointer"
+                            @click="selectDepartment(dept.id)">
                             <div class="card-body py-2">
                                 <h6 class="mb-1" v-text="dept.name"></h6>
                                 <small class="text-muted">
@@ -106,7 +110,7 @@
                                 </small>
                                 <div class="mt-2">
                                     <button class="btn btn-sm btn-primary w-100"
-                                            @click="viewDoctorAvailability(doctor.id)">
+                                        @click="viewDoctorAvailability(doctor.id)">
                                         <i class="bi bi-calendar-check"></i> Check Availability
                                     </button>
                                 </div>
@@ -130,7 +134,7 @@
                     </div>
                     <div v-else>
                         <div v-for="apt in upcomingAppointments" :key="apt.id"
-                             class="card mb-2 border-start border-primary border-3">
+                            class="card mb-2 border-start border-primary border-3">
                             <div class="card-body py-2">
                                 <h6 class="mb-1" v-text="apt.doctor_name"></h6>
                                 <small class="text-muted d-block" v-text="apt.department"></small>
@@ -145,11 +149,11 @@
                                     </small>
                                 </div>
                                 <button class="btn btn-sm btn-outline-primary w-100 mt-2"
-                                        @click="viewAppointmentDetails(apt.id)">
+                                    @click="viewAppointmentDetails(apt.id)">
                                     <i class="bi bi-eye"></i> View Details
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger w-100 mt-2"
-                                        @click="cancelAppointment(apt.id)">
+                                    @click="cancelAppointment(apt.id)">
                                     <i class="bi bi-x-circle"></i> Cancel
                                 </button>
                             </div>
@@ -179,7 +183,6 @@
                         <h6>Doctor: <span v-text="selectedDoctor.name"></span></h6>
                         <p class="text-muted" v-text="selectedDoctor.department"></p>
                         <hr>
-
                         <div v-if="availability.length === 0" class="alert alert-warning">
                             <i class="bi bi-exclamation-triangle"></i>
                             No available slots for the next 7 days
@@ -194,15 +197,15 @@
                                     <div class="card-body">
                                         <div class="row g-2">
                                             <div v-for="timeSlot in generateTimeSlots(slot)" 
-                                                 :key="timeSlot" class="col-6 col-md-4">
+                                                :key="timeSlot" class="col-6 col-md-4">
                                                 <button class="btn btn-sm w-100"
-                                                        :class="{
-                                                            'btn-primary': selectedSlot && selectedSlot.date === slot.date && selectedSlot.time === timeSlot,
-                                                            'btn-outline-primary': !isSlotBooked(slot.date, timeSlot) && !(selectedSlot && selectedSlot.date === slot.date && selectedSlot.time === timeSlot),
-                                                            'btn-secondary': isSlotBooked(slot.date, timeSlot)
-                                                        }"
-                                                        :disabled="isSlotBooked(slot.date, timeSlot)"
-                                                        @click="selectTimeSlot(slot.date, timeSlot)">
+                                                    :class="{
+                                                        'btn-primary': selectedSlot && selectedSlot.date === slot.date && selectedSlot.time === timeSlot,
+                                                        'btn-outline-primary': !isSlotBooked(slot.date, timeSlot) && !(selectedSlot && selectedSlot.date === slot.date && selectedSlot.time === timeSlot),
+                                                        'btn-secondary': isSlotBooked(slot.date, timeSlot)
+                                                    }"
+                                                    :disabled="isSlotBooked(slot.date, timeSlot)"
+                                                    @click="selectTimeSlot(slot.date, timeSlot)">
                                                     <i :class="isSlotBooked(slot.date, timeSlot) ? 'bi bi-x-circle' : 'bi bi-clock'"></i>
                                                     <span v-text="timeSlot"></span>
                                                     <span v-if="isSlotBooked(slot.date, timeSlot)" class="ms-1">(Booked)</span>
@@ -212,7 +215,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div v-if="selectedSlot" class="mt-3">
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle"></i>
@@ -220,7 +222,7 @@
                                 </div>
                                 <label class="form-label">Reason for Visit</label>
                                 <textarea v-model="bookingReason" class="form-control" rows="3"
-                                          placeholder="Describe your symptoms or reason for consultation"></textarea>
+                                    placeholder="Describe your symptoms or reason for consultation"></textarea>
                             </div>
                         </div>
                     </div>
@@ -228,8 +230,8 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary"
-                            :disabled="!selectedSlot || bookingLoading"
-                            @click="confirmBooking">
+                        :disabled="!selectedSlot || bookingLoading"
+                        @click="confirmBooking">
                         <span v-if="bookingLoading" class="spinner-border spinner-border-sm me-2"></span>
                         <span v-text="bookingLoading ? 'Booking...' : 'Confirm Booking'"></span>
                     </button>
@@ -260,12 +262,12 @@
                             <p class="mb-1">
                                 <strong>Status:</strong>
                                 <span class="badge"
-                                      :class="{
-                                          'bg-primary': selectedAppointment.appointment.status === 'Booked',
-                                          'bg-success': selectedAppointment.appointment.status === 'Completed',
-                                          'bg-danger': selectedAppointment.appointment.status === 'Cancelled'
-                                      }"
-                                      v-text="selectedAppointment.appointment.status"></span>
+                                    :class="{
+                                        'bg-primary': selectedAppointment.appointment.status === 'Booked',
+                                        'bg-success': selectedAppointment.appointment.status === 'Completed',
+                                        'bg-danger': selectedAppointment.appointment.status === 'Cancelled'
+                                    }"
+                                    v-text="selectedAppointment.appointment.status"></span>
                             </p>
                             <p v-if="selectedAppointment.appointment.reason" class="mb-0">
                                 <strong>Reason:</strong> <span v-text="selectedAppointment.appointment.reason"></span>
@@ -291,7 +293,7 @@
 
                     <!-- Follow-up Alert -->
                     <div v-if="selectedAppointment.treatment && selectedAppointment.treatment.follow_up_required"
-                         class="alert alert-warning mt-3">
+                        class="alert alert-warning mt-3">
                         <i class="bi bi-exclamation-triangle"></i>
                         <strong>Follow-up Required:</strong>
                         <span v-if="selectedAppointment.treatment.follow_up_date">
@@ -306,187 +308,319 @@
             </div>
         </div>
     </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-circle"></i> Edit My Profile
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="saveProfile">
+                        <h6 class="mb-3"><i class="bi bi-person"></i> Personal Information</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" v-model="profileForm.full_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone *</label>
+                                <input type="tel" class="form-control" v-model="profileForm.phone" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" v-model="profileForm.email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" v-model="profileForm.address" rows="2"></textarea>
+                        </div>
+                        <hr>
+                        <h6 class="mb-3"><i class="bi bi-heart-pulse"></i> Medical Information</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" v-model="profileForm.date_of_birth">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Blood Group</label>
+                                <select class="form-select" v-model="profileForm.blood_group">
+                                    <option value="">Select...</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Emergency Contact</label>
+                            <input type="tel" class="form-control" v-model="profileForm.emergency_contact" 
+                                placeholder="10-digit phone number">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Medical History</label>
+                            <textarea class="form-control" v-model="profileForm.medical_history" rows="3"
+                                placeholder="Any chronic diseases, past surgeries, etc."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Allergies</label>
+                            <textarea class="form-control" v-model="profileForm.allergies" rows="2"
+                                placeholder="Drug allergies, food allergies, etc."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @click="saveProfile" :disabled="savingProfile">
+                        <span v-if="savingProfile" class="spinner-border spinner-border-sm me-2"></span>
+                        <span v-text="savingProfile ? 'Saving...' : 'Save Changes'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-const { createApp } = Vue;
-
-createApp({
-    data() {
-        return {
-            patientInfo: { name: '', blood_group: '', age: null },
-            upcomingAppointments: [],
-            recentHistory: [],
-            departments: [],
-            doctors: [],
-            availability: [],
-            bookedSlots: [],
-            selectedDepartment: null,
-            selectedDoctor: null,
-            selectedSlot: null,
-            selectedAppointment: null,
-            bookingReason: '',
-            loading: true,
-            loadingDoctors: false,
-            loadingAvailability: false,
-            bookingLoading: false
-        }
-    },
-    mounted() {
-        this.loadDashboard();
-    },
-    methods: {
-        async loadDashboard() {
-            try {
-                const response = await axios.get('/api/patient/dashboard');
-                this.patientInfo = response.data.patient_info;
-                this.upcomingAppointments = response.data.upcoming_appointments;
-                this.recentHistory = response.data.recent_history;
-                this.departments = response.data.departments;
-            } catch (error) {
-                console.error('Error loading dashboard:', error);
-                alert('Failed to load dashboard data');
-            } finally {
-                this.loading = false;
+    const { createApp } = Vue;
+    
+    createApp({
+        data() {
+            return {
+                patientInfo: { name: '', blood_group: '', age: null },
+                upcomingAppointments: [],
+                recentHistory: [],
+                departments: [],
+                doctors: [],
+                availability: [],
+                bookedSlots: [],
+                profileForm: {
+                    full_name: '',
+                    email: '',
+                    phone: '',
+                    address: '',
+                    date_of_birth: '',
+                    blood_group: '',
+                    emergency_contact: '',
+                    medical_history: '',
+                    allergies: ''
+                },
+                savingProfile: false,
+                selectedDepartment: null,
+                selectedDoctor: null,
+                selectedSlot: null,
+                selectedAppointment: null,
+                bookingReason: '',
+                loading: true,
+                loadingDoctors: false,
+                loadingAvailability: false,
+                bookingLoading: false
             }
         },
-
-        async selectDepartment(deptId) {
-            this.selectedDepartment = deptId;
-            this.loadingDoctors = true;
-            try {
-                const response = await axios.get(`/api/patient/doctors?department_id=${deptId}`);
-                this.doctors = response.data.doctors;
-            } catch (error) {
-                console.error('Error loading doctors:', error);
-            } finally {
-                this.loadingDoctors = false;
-            }
+        mounted() {
+            this.loadDashboard();
         },
-
-        async viewDoctorAvailability(doctorId) {
-            this.loadingAvailability = true;
-            const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
-            modal.show();
-
-            try {
-                const response = await axios.get(`/api/patient/doctors/${doctorId}/availability`);
-                this.selectedDoctor = response.data.doctor;
-                this.availability = response.data.availability;
-                this.bookedSlots = response.data.booked_slots || [];
-            } catch (error) {
-                console.error('Error loading availability:', error);
-                alert('Failed to load doctor availability');
-            } finally {
-                this.loadingAvailability = false;
-            }
-        },
-
-        generateTimeSlots(slot) {
-            const slots = [];
-            const start = slot.start_time.split(':');
-            const end = slot.end_time.split(':');
-
-            let currentHour = parseInt(start[0]);
-            let currentMinute = parseInt(start[1]);
-            const endHour = parseInt(end[0]);
-            const endMinute = parseInt(end[1]);
-
-            while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
-                const timeStr = String(currentHour).padStart(2, '0') + ':' + String(currentMinute).padStart(2, '0');
-                slots.push(timeStr);
-
-                currentMinute += 30;
-                if (currentMinute >= 60) {
-                    currentMinute = 0;
-                    currentHour += 1;
+        methods: {
+            async loadDashboard() {
+                try {
+                    const response = await axios.get('/api/patient/dashboard');
+                    this.patientInfo = response.data.patient_info;
+                    this.upcomingAppointments = response.data.upcoming_appointments;
+                    this.recentHistory = response.data.recent_history;
+                    this.departments = response.data.departments;
+                } catch (error) {
+                    console.error('Error loading dashboard:', error);
+                    alert('Failed to load dashboard data');
+                } finally {
+                    this.loading = false;
+                }
+            },
+    
+            async selectDepartment(deptId) {
+                this.selectedDepartment = deptId;
+                this.loadingDoctors = true;
+                try {
+                    const response = await axios.get(`/api/patient/doctors?department_id=${deptId}`);
+                    this.doctors = response.data.doctors;
+                } catch (error) {
+                    console.error('Error loading doctors:', error);
+                } finally {
+                    this.loadingDoctors = false;
+                }
+            },
+    
+            async viewDoctorAvailability(doctorId) {
+                this.loadingAvailability = true;
+                const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
+                modal.show();
+    
+                try {
+                    const response = await axios.get(`/api/patient/doctors/${doctorId}/availability`);
+                    this.selectedDoctor = response.data.doctor;
+                    this.availability = response.data.availability;
+                    this.bookedSlots = response.data.booked_slots || [];
+                } catch (error) {
+                    console.error('Error loading availability:', error);
+                    alert('Failed to load doctor availability');
+                } finally {
+                    this.loadingAvailability = false;
+                }
+            },
+    
+            async showEditProfileModal() {
+                try {
+                    const response = await axios.get('/api/auth/me');
+                    const user = response.data.user;
+                    
+                    this.profileForm = {
+                        full_name: user.full_name,
+                        email: user.email,
+                        phone: user.phone,
+                        address: user.address || '',
+                        date_of_birth: user.profile.date_of_birth || '',
+                        blood_group: user.profile.blood_group || '',
+                        emergency_contact: user.profile.emergency_contact || '',
+                        medical_history: user.profile.medical_history || '',
+                        allergies: user.profile.allergies || ''
+                    };
+                    
+                    new bootstrap.Modal(document.getElementById('editProfileModal')).show();
+                } catch (error) {
+                    console.error('Error loading profile:', error);
+                    alert('Failed to load profile data');
+                }
+            },
+    
+            async saveProfile() {
+                this.savingProfile = true;
+                try {
+                    await axios.put('/api/auth/update-profile', this.profileForm);
+                    alert('Profile updated successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('editProfileModal')).hide();
+                    this.loadDashboard();
+                } catch (error) {
+                    console.error('Error updating profile:', error);
+                    alert(error.response?.data?.error || 'Failed to update profile');
+                } finally {
+                    this.savingProfile = false;
+                }
+            },
+    
+            generateTimeSlots(slot) {
+                const slots = [];
+                const start = slot.start_time.split(':');
+                const end = slot.end_time.split(':');
+    
+                let currentHour = parseInt(start[0]);
+                let currentMinute = parseInt(start[1]);
+                const endHour = parseInt(end[0]);
+                const endMinute = parseInt(end[1]);
+    
+                while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+                    const timeStr = String(currentHour).padStart(2, '0') + ':' + String(currentMinute).padStart(2, '0');
+                    slots.push(timeStr);
+    
+                    currentMinute += 30;
+                    if (currentMinute >= 60) {
+                        currentMinute = 0;
+                        currentHour += 1;
+                    }
+                }
+    
+                return slots;
+            },
+    
+            isSlotBooked(date, time) {
+                const slotKey = `${date}_${time}`;
+                return this.bookedSlots.includes(slotKey);
+            },
+    
+            selectTimeSlot(date, time) {
+                this.selectedSlot = { date, time };
+            },
+    
+            async confirmBooking() {
+                if (!this.selectedSlot) {
+                    alert('Please select a time slot');
+                    return;
+                }
+    
+                this.bookingLoading = true;
+                try {
+                    await axios.post('/api/patient/appointments/book', {
+                        doctor_id: this.selectedDoctor.id,
+                        appointment_date: this.selectedSlot.date,
+                        appointment_time: this.selectedSlot.time,
+                        reason_for_visit: this.bookingReason
+                    });
+    
+                    alert('Appointment booked successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('bookingModal')).hide();
+                    this.loadDashboard();
+                    this.resetBooking();
+                } catch (error) {
+                    alert(error.response?.data?.error || 'Failed to book appointment');
+                } finally {
+                    this.bookingLoading = false;
+                }
+            },
+    
+            async viewAppointmentDetails(aptId) {
+                try {
+                    const response = await axios.get(`/api/patient/appointments/${aptId}`);
+                    this.selectedAppointment = response.data;
+                    new bootstrap.Modal(document.getElementById('appointmentDetailsModal')).show();
+                } catch (error) {
+                    alert('Failed to load appointment details');
+                }
+            },
+    
+            async cancelAppointment(aptId) {
+                if (!confirm('Are you sure you want to cancel this appointment?')) return;
+    
+                try {
+                    await axios.post(`/api/patient/appointments/${aptId}/cancel`);
+                    alert('Appointment cancelled successfully');
+                    this.loadDashboard();
+                } catch (error) {
+                    alert(error.response?.data?.error || 'Failed to cancel appointment');
+                }
+            },
+    
+            resetBooking() {
+                this.selectedSlot = null;
+                this.bookingReason = '';
+            },
+    
+            formatDate(dateStr) {
+                return new Date(dateStr).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+            },
+    
+            async logout() {
+                try {
+                    await axios.post('/api/auth/logout');
+                    window.location.href = '/';
+                } catch (error) {
+                    console.error('Logout error:', error);
                 }
             }
-
-            return slots;
-        },
-
-        isSlotBooked(date, time) {
-            const slotKey = `${date}_${time}`;
-            return this.bookedSlots.includes(slotKey);
-        },
-
-        selectTimeSlot(date, time) {
-            this.selectedSlot = { date, time };
-        },
-
-        async confirmBooking() {
-            if (!this.selectedSlot) {
-                alert('Please select a time slot');
-                return;
-            }
-
-            this.bookingLoading = true;
-            try {
-                await axios.post('/api/patient/appointments/book', {
-                    doctor_id: this.selectedDoctor.id,
-                    appointment_date: this.selectedSlot.date,
-                    appointment_time: this.selectedSlot.time,
-                    reason_for_visit: this.bookingReason
-                });
-
-                alert('Appointment booked successfully!');
-                bootstrap.Modal.getInstance(document.getElementById('bookingModal')).hide();
-                this.loadDashboard();
-                this.resetBooking();
-            } catch (error) {
-                alert(error.response?.data?.error || 'Failed to book appointment');
-            } finally {
-                this.bookingLoading = false;
-            }
-        },
-
-        async viewAppointmentDetails(aptId) {
-            try {
-                const response = await axios.get(`/api/patient/appointments/${aptId}`);
-                this.selectedAppointment = response.data;
-                new bootstrap.Modal(document.getElementById('appointmentDetailsModal')).show();
-            } catch (error) {
-                alert('Failed to load appointment details');
-            }
-        },
-
-        async cancelAppointment(aptId) {
-            if (!confirm('Are you sure you want to cancel this appointment?')) return;
-
-            try {
-                await axios.post(`/api/patient/appointments/${aptId}/cancel`);
-                alert('Appointment cancelled successfully');
-                this.loadDashboard();
-            } catch (error) {
-                alert(error.response?.data?.error || 'Failed to cancel appointment');
-            }
-        },
-
-        resetBooking() {
-            this.selectedSlot = null;
-            this.bookingReason = '';
-        },
-
-        formatDate(dateStr) {
-            return new Date(dateStr).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-            });
-        },
-
-        async logout() {
-            try {
-                await axios.post('/api/auth/logout');
-                window.location.href = '/';
-            } catch (error) {
-                console.error('Logout error:', error);
-            }
         }
-    }
-}).mount('#app');
+    }).mount('#app');
 </script>
 {% endblock %}

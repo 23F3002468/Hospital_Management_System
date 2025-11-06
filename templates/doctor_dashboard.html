@@ -381,6 +381,106 @@
             </div>
         </div>
     </div>
+    <!-- Patient History Modal -->
+    <div class="modal fade" id="patientHistoryModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-clock-history"></i>Patient History - <span v-if="selectedPatientHistory" v-text="selectedPatientHistory.patient.name"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" v-if="selectedPatientHistory">
+                    <!-- Patient Info Card -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Age:</strong> <span v-text="selectedPatientHistory.patient.age || 'N/A'"></span></p>
+                                    <p><strong>Blood Group:</strong> <span v-text="selectedPatientHistory.patient.blood_group || 'N/A'"></span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p v-if="selectedPatientHistory.patient.medical_history">
+                                        <strong>Medical History:</strong> <span v-text="selectedPatientHistory.patient.medical_history"></span>
+                                    </p>
+                                    <p v-if="selectedPatientHistory.patient.allergies" class="text-danger">
+                                        <strong><i class="bi bi-exclamation-triangle"></i>Allergies:</strong> 
+                                        <span v-text="selectedPatientHistory.patient.allergies"></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Appointment History -->
+                    <h6 class="mb-3">
+                        <i class="bi bi-calendar-check"></i>Appointment History 
+                        (<span v-text="selectedPatientHistory.appointment_history.length"></span> visits)
+                    </h6>
+                    <div v-if="selectedPatientHistory.appointment_history.length === 0" class="alert alert-info">
+                        No appointment history with you
+                    </div>
+                    <div v-else class="accordion" id="appointmentAccordion">
+                        <div v-for="(apt, index) in selectedPatientHistory.appointment_history" :key="apt.id" 
+                            class="accordion-item">
+                            <h2 class="accordion-header" :id="'heading' + index">
+                                <button class="accordion-button" :class="{'collapsed': index !== 0}" 
+                                    type="button" 
+                                    data-bs-toggle="collapse" 
+                                    :data-bs-target="'#collapse' + index">
+                                    <div class="w-100">
+                                        <span v-text="formatDate(apt.date)"></span>
+                                        <span class="badge ms-2" 
+                                            :class="{
+                                            'bg-primary': apt.status === 'Booked',
+                                            'bg-success': apt.status === 'Completed',
+                                            'bg-danger': apt.status === 'Cancelled'
+                                            }" 
+                                            v-text="apt.status"></span>
+                                        <span v-if="apt.reason" class="text-muted ms-2">
+                                        - <span v-text="apt.reason"></span>
+                                        </span>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div :id="'collapse' + index" 
+                                class="accordion-collapse collapse" 
+                                :class="{'show': index === 0}"
+                                :data-bs-parent="'#appointmentAccordion'">
+                                <div class="accordion-body">
+                                    <div v-if="apt.treatment">
+                                        <div class="mb-3">
+                                            <strong><i class="bi bi-clipboard-pulse"></i>Diagnosis:</strong>
+                                            <p v-text="apt.treatment.diagnosis"></p>
+                                        </div>
+                                        <div class="mb-3" v-if="apt.treatment.prescription">
+                                            <strong><i class="bi bi-capsule"></i>Prescription:</strong>
+                                            <p v-text="apt.treatment.prescription"></p>
+                                        </div>
+                                        <div class="mb-3" v-if="apt.treatment.notes">
+                                            <strong><i class="bi bi-sticky"></i>Notes:</strong>
+                                            <p v-text="apt.treatment.notes"></p>
+                                        </div>
+                                        <div v-if="apt.treatment.follow_up_required" class="alert alert-warning">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            <strong>Follow-up Required</strong>
+                                        </div>
+                                    </div>
+                                    <div v-else class="text-muted">
+                                        <i class="bi bi-info-circle"></i>
+                                        No treatment record available
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -399,6 +499,7 @@
                 patientSearch: '',
                 loadingPatients: false,
                 selectedAppointment: null,
+                selectedPatientHistory: null,
                 appointmentFilter: '',
                 loadingSchedule: true,
                 loadingAppointments: false,
@@ -499,14 +600,13 @@
     async viewPatientHistory(patientId) {
     try {
         const response = await axios.get(`/api/doctor/patients/${patientId}/history`);
-        // Show patient history in a modal or new view
-        alert(`Patient history loaded. Showing ${response.data.appointment_history.length} appointments.`);
-        // You can create a modal to display this data nicely
+        this.selectedPatientHistory = response.data;
+        new bootstrap.Modal(document.getElementById('patientHistoryModal')).show();
     } catch (error) {
+        console.error('Error loading patient history:', error);
         alert('Failed to load patient history');
     }
     },
-    
             async completeTreatment() {
                 if (!this.treatmentForm.diagnosis) {
                     alert('Diagnosis is required');
