@@ -7,21 +7,26 @@
     <!-- Welcome Section -->
     <div class="row mb-4">
         <div class="col-12 d-flex justify-content-between align-items-center">
-            <div>
-                <h2><i class="bi bi-person-circle text-primary"></i> Welcome, <span v-text="patientInfo.name"></span>!</h2>
-                <p class="text-muted">
-                    Manage your appointments and view your medical history
-                    <a href="/patient/history" class="btn btn-sm btn-outline-primary ms-3">
-                        <i class="bi bi-clock-history"></i> View Full History
-                    </a>
-                </p>
-            </div>
-            <div>
-                <button class="btn btn-primary" @click="showEditProfileModal">
-                    <i class="bi bi-pencil-square"></i> Edit Profile
-                </button>
-            </div>
-        </div>
+    <div>
+        <h2><i class="bi bi-person-circle text-primary"></i>Welcome, <span v-text="patientInfo.name"></span>!</h2>
+        <p class="text-muted">
+            Manage your appointments and view your medical history
+            <a href="/patient/history" class="btn btn-sm btn-outline-primary ms-3">
+                <i class="bi bi-clock-history"></i>View Full History
+            </a>
+            <button class="btn btn-sm btn-outline-success ms-2" @click="exportTreatmentHistory" :disabled="exportingCSV">
+                <span v-if="exportingCSV" class="spinner-border spinner-border-sm me-1"></span>
+                <i v-else class="bi bi-file-earmark-spreadsheet"></i>
+                <span v-text="exportingCSV ? 'Exporting...' : 'Export CSV'"></span>
+            </button>
+        </p>
+    </div>
+    <div>
+        <button class="btn btn-primary" @click="showEditProfileModal">
+            <i class="bi bi-pencil-square"></i>Edit Profile
+        </button>
+    </div>
+</div>
     </div>
 
     <!-- Quick Stats -->
@@ -417,6 +422,8 @@
                     medical_history: '',
                     allergies: ''
                 },
+                exportingCSV: false,
+exportTaskId: null,
                 savingProfile: false,
                 selectedDepartment: null,
                 selectedDoctor: null,
@@ -518,6 +525,47 @@
                 }
             },
     
+            async exportTreatmentHistory() {
+    this.exportingCSV = true;
+    try {
+        const response = await axios.post('/api/patient/export-treatment-history');
+        this.exportTaskId = response.data.task_id;
+        
+        alert('CSV export started! The file will be generated shortly.');
+        
+        // Poll for completion
+        this.checkExportStatus();
+    } catch (error) {
+        console.error('Error triggering export:', error);
+        alert('Failed to start export');
+        this.exportingCSV = false;
+    }
+},
+
+async checkExportStatus() {
+    if (!this.exportTaskId) return;
+    
+    try {
+        const response = await axios.get(`/api/patient/export-status/${this.exportTaskId}`);
+        
+        if (response.data.state === 'SUCCESS') {
+            this.exportingCSV = false;
+            const result = response.data.result;
+            alert(`CSV export completed! File: ${result.filename}\nRecords: ${result.records}\nLocation: ${result.filepath}`);
+            this.exportTaskId = null;
+        } else if (response.data.state === 'FAILURE') {
+            this.exportingCSV = false;
+            alert('CSV export failed. Please try again.');
+            this.exportTaskId = null;
+        } else {
+            // Still processing, check again in 2 seconds
+            setTimeout(() => this.checkExportStatus(), 2000);
+        }
+    } catch (error) {
+        console.error('Error checking export status:', error);
+        this.exportingCSV = false;
+    }
+},
             generateTimeSlots(slot) {
                 const slots = [];
                 const start = slot.start_time.split(':');

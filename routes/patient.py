@@ -2,12 +2,16 @@ from flask import Blueprint, request, jsonify
 from flask_login import current_user
 from datetime import datetime, timedelta, time
 from sqlalchemy import and_, or_
-
+from flask_caching import Cache
 from models import db, Department, Doctor, DoctorAvailability, Appointment, Treatment, Patient, User
 from routes.auth import patient_required
 
 # Create Blueprint
 patient_bp = Blueprint('patient', __name__)
+
+# Initialize cache - DON'T create new instance, import from app
+# This will be initialized when the blueprint is registered
+cache = Cache()
 
 
 @patient_bp.route('/dashboard', methods=['GET'])
@@ -410,17 +414,72 @@ def get_treatment_history():
 def get_departments():
     """Get all departments with doctor counts"""
     try:
-        departments = Department.query.all()
+        # Try to get from cache
+        from app import cache
+        departments_data = cache.get('all_departments')
         
-        return jsonify({
-            'departments': [{
+        if departments_data is None:
+            departments = Department.query.all()
+            
+            departments_data = [{
                 'id': dept.id,
                 'name': dept.name,
                 'description': dept.description,
                 'doctors_count': dept.doctors_count,
                 'available_doctors': dept.available_doctors_count
             } for dept in departments]
-        }), 200
+            
+            # Cache for 5 minutes
+            cache.set('all_departments', departments_data, timeout=300)
+        
+        return jsonify({'departments': departments_data}), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@patient_bp.route('/export-treatment-history', methods=['POST'])
+@patient_required
+def trigger_csv_export():
+    """Trigger async CSV export job"""
+    try:
+        from tasks import export_patient_treatment_history_csv
+        
+        patient = current_user.patient_profile
+        
+        # Trigger async task using .delay()
+        task = export_patient_treatment_history_csv.delay(patient.id)
+        
+        return jsonify({
+            'message': 'Export job started',
+            'task_id': task.id,
+            'status': 'processing'
+        }), 202
+        
+    except Exception as e:
+        print(f"Error triggering export: {str(e)}")  # Debug print
+        return jsonify({'error': str(e)}), 500
+
+@patient_bp.route('/export-status/<task_id>', methods=['GET'])
+@patient_required
+def check_export_status(task_id):
+    """Check status of CSV export job"""
+    try:
+        from celery.result import AsyncResult
+        from celery_app import celery
+        
+        task = AsyncResult(task_id, app=celery)
+        
+        if task.state == 'PENDING':
+            response = {'state': task.state, 'status': 'Job is waiting...'}
+        elif task.state == 'SUCCESS':
+            response = {
+                'state': task.state,
+                'result': task.result
+            }
+        else:
+            response = {'state': task.state, 'status': str(task.info)}
+        
+        return jsonify(response), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

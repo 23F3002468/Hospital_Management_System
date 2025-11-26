@@ -200,6 +200,9 @@ def add_doctor():
                 
                 db.session.commit()
                 
+                from app import cache
+                cache.delete('all_departments')
+                
                 return jsonify({
                     'message': 'Doctor reactivated successfully',
                     'doctor': {
@@ -300,6 +303,9 @@ def update_doctor(doctor_id):
         
         db.session.commit()
         
+        from app import cache
+        cache.delete('all_departments')
+        
         return jsonify({'message': 'Doctor updated successfully'}), 200
         
     except Exception as e:
@@ -316,6 +322,9 @@ def toggle_doctor_status(doctor_id):
         
         doctor.user.is_active = not doctor.user.is_active
         db.session.commit()
+        
+        from app import cache
+        cache.delete('all_departments')
         
         status = 'activated' if doctor.user.is_active else 'deactivated'
         return jsonify({'message': f'Doctor {status} successfully'}), 200
