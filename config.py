@@ -1,6 +1,12 @@
 import os
 from datetime import timedelta
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env (if present)
+load_dotenv()
+
+
 class Config:
     """Base configuration class"""
     
@@ -39,13 +45,15 @@ class Config:
     # File upload (for future use if needed)
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     
-    # Email configuration (for monthly reports and reminders)
-    MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'smtp.gmail.com'
-    MAIL_PORT = int(os.environ.get('MAIL_PORT') or 587)
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', 'on', '1']
+    # Email configuration (Mailtrap sandbox in development)
+    # Credentials come from .env - see .env.example
+    MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'sandbox.smtp.mailtrap.io'
+    MAIL_PORT = int(os.environ.get('MAIL_PORT') or 2525)
+    MAIL_USE_TLS = True
+    MAIL_USE_SSL = False
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or 'noreply@hospital.com'
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or 'HMS <noreply@hospital.com>'
     
     # Google Chat Webhook (for daily reminders)
     GOOGLE_CHAT_WEBHOOK_URL = os.environ.get('GOOGLE_CHAT_WEBHOOK_URL')
