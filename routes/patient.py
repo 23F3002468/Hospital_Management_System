@@ -121,7 +121,7 @@ def get_doctor_availability(doctor_id):
     try:
         doctor = Doctor.query.get_or_404(doctor_id)
         
-        today = datetime.utcnow().date()
+        today = hospital_today()
         next_7_days = today + timedelta(days=7)
         
         availability = DoctorAvailability.query.filter(
@@ -188,7 +188,7 @@ def book_appointment():
             apt_time = datetime.strptime(apt_time_str, '%H:%M:%S').time()
         
         # Check if date is in the future
-        now = datetime.utcnow()
+        now = hospital_now()
         apt_datetime = datetime.combine(apt_date, apt_time)
         if apt_datetime < now:
             return jsonify({'error': 'Cannot book appointments in the past'}), 400
@@ -284,7 +284,7 @@ def get_appointments():
             joinedload(Appointment.doctor).joinedload(Doctor.department),
         ).filter(Appointment.patient_id == patient.id)
         
-        today = datetime.utcnow().date()
+        today = hospital_today()
         
         if status_filter == 'upcoming':
             query = query.filter(

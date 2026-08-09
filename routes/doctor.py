@@ -19,7 +19,7 @@ def dashboard():
     """Get doctor dashboard with today's appointments and statistics"""
     try:
         doctor = current_user.doctor_profile
-        today = datetime.utcnow().date()
+        today = hospital_today()
         
         # Today's appointments
         today_appointments = Appointment.query.options(
@@ -287,7 +287,7 @@ def get_availability():
     try:
         doctor = current_user.doctor_profile
         
-        today = datetime.utcnow().date()
+        today = hospital_today()
         next_7_days = today + timedelta(days=7)
         
         availability = DoctorAvailability.query.filter(
@@ -329,11 +329,11 @@ def set_availability():
         end_time = datetime.strptime(data['end_time'], '%H:%M').time()
         
         # Validate date is not in the past
-        if slot_date < datetime.utcnow().date():
+        if slot_date < hospital_today():
             return jsonify({'error': 'Cannot set availability for past dates'}), 400
         
         # Validate date is within 7 days
-        if slot_date > datetime.utcnow().date() + timedelta(days=7):
+        if slot_date > hospital_today() + timedelta(days=7):
             return jsonify({'error': 'Can only set availability for next 7 days'}), 400
         
         # Validate time

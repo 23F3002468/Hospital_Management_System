@@ -25,7 +25,7 @@ def dashboard():
         total_appointments = Appointment.query.count()
         
         # Upcoming appointments
-        today = datetime.utcnow().date()
+        today = hospital_today()
         upcoming_appointments = Appointment.query.filter(
             Appointment.appointment_date >= today,
             Appointment.status == 'Booked'

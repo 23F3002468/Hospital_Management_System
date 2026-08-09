@@ -23,6 +23,8 @@ from datetime import datetime, timedelta
 import csv
 import io
 
+from timeutils import hospital_today
+
 # ============================================================================
 # DEFINE TASKS HERE
 # ============================================================================
@@ -31,7 +33,7 @@ import io
 def send_daily_appointment_reminders():
     """Send reminders to patients with appointments today"""
     with flask_app.app_context():
-        today = datetime.utcnow().date()
+        today = hospital_today()
         
         appointments = Appointment.query.filter(
             Appointment.appointment_date == today,
@@ -82,7 +84,7 @@ Hospital Management System
 def send_monthly_doctor_reports():
     """Generate and send monthly reports to doctors"""
     with flask_app.app_context():
-        today = datetime.utcnow().date()
+        today = hospital_today()
         first_day_current_month = today.replace(day=1)
         last_day_previous_month = first_day_current_month - timedelta(days=1)
         first_day_previous_month = last_day_previous_month.replace(day=1)

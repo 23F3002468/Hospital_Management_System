@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime, timedelta
 
+from timeutils import hospital_now, hospital_today
+
 # Initialize our database
 db = SQLAlchemy()
 
@@ -162,7 +164,7 @@ class Patient(db.Model):
     def age(self):
         """Calculate patient's age from date of birth"""
         if self.date_of_birth:
-            today = datetime.utcnow().date()
+            today = hospital_today()
             return today.year - self.date_of_birth.year - (
                 (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
             )
@@ -271,7 +273,7 @@ class Appointment(db.Model):
     @property
     def is_upcoming(self):
         """Check if appointment is in the future"""
-        return self.appointment_datetime > datetime.utcnow() and self.status == 'Booked'
+        return self.appointment_datetime > hospital_now() and self.status == 'Booked'
     
     @property
     def can_be_cancelled(self):
