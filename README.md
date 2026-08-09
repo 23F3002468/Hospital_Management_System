@@ -37,6 +37,7 @@ init_db.py           Creates tables and seeds the default admin
 cache.py             The Flask-Caching instance, cache keys and invalidation
 celery_app.py        The Celery instance and beat schedule
 celery_worker.py     Worker entrypoint; task and email helper definitions
+timeutils.py         Hospital-local date/time helpers
 test_email.py        Manual script to fire the email tasks
 routes/              auth, admin, doctor and patient API blueprints
 routes/errors.py     Shared server_error() helper for 500 responses
@@ -99,7 +100,10 @@ Default admin login is created by `init_db.py` — see `ADMIN_USERNAME` /
 | `send_monthly_doctor_reports`       | 1st of month, 09:00 |
 | `export_patient_treatment_history_csv` | On demand        |
 
-Timezone is `Asia/Kolkata` (set in `celery_app.py`).
+Timezone is `Asia/Kolkata`, set once as `timezone` in `config.py`. Both the beat
+schedule and the app's own date logic read it, so "today" means the same thing to
+the scheduler and to a doctor's dashboard. `timeutils.hospital_today()` /
+`hospital_now()` return that local clock; `created_at`-style audit columns stay in UTC.
 
 To trigger the email tasks manually without waiting for the schedule:
 
