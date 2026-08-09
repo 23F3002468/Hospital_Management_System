@@ -82,6 +82,7 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'  # In-memory database for tests
     WTF_CSRF_ENABLED = False
+    CACHE_TYPE = 'SimpleCache'  # In-process cache so tests don't need a Redis server
 
 
 # Configuration dictionary

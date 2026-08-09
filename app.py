@@ -1,36 +1,17 @@
 from flask import Flask, jsonify, render_template, redirect, url_for
 from flask_login import LoginManager, current_user, login_required
 from flask_cors import CORS
-from flask_caching import Cache
-from celery import Celery
 import os
 
 from models import db, User
 from config import config
+from cache import cache
 
-from celery import Celery
-
-# Create Celery instance for tasks
-celery = Celery(
-    'tasks',
-    broker='redis://localhost:6379/0',
-    backend='redis://localhost:6379/0'
-)
-
-# Update celery config
-celery.conf.update(
-    task_serializer='json',
-    accept_content=['json'],
-    result_serializer='json',
-    timezone='Asia/Kolkata',
-    enable_utc=True,
-)
+# The single Celery instance lives in celery_app.py - see the note there.
+# Nothing in the web process constructs one.
 
 # Initialize extensions
 login_manager = LoginManager()
-cache = Cache()
-celery = Celery(__name__)
-cache = Cache()
 
 def create_app(config_name=None):
     """
@@ -49,15 +30,12 @@ def create_app(config_name=None):
     db.init_app(app)
     login_manager.init_app(app)
     cache.init_app(app, config={
-    'CACHE_TYPE': app.config['CACHE_TYPE'],
-    'CACHE_REDIS_URL': app.config['CACHE_REDIS_URL'],
-    'CACHE_DEFAULT_TIMEOUT': app.config['CACHE_DEFAULT_TIMEOUT']
-})
+        'CACHE_TYPE': app.config['CACHE_TYPE'],
+        'CACHE_REDIS_URL': app.config['CACHE_REDIS_URL'],
+        'CACHE_DEFAULT_TIMEOUT': app.config['CACHE_DEFAULT_TIMEOUT'],
+    })
     CORS(app)  # Enable CORS for Vue.js frontend
-    
-    # Configure Celery
-    celery.conf.update(app.config)
-    
+
     # Configure Flask-Login
     login_manager.login_view = 'index'
     login_manager.login_message = 'Please log in to access this page.'
@@ -130,30 +108,8 @@ def create_app(config_name=None):
     
     return app
 
-def make_celery(app):
-    """
-    Create Celery instance with Flask app context
-    """
-    celery = Celery(
-        app.import_name,
-        backend=app.config.get('result_backend') or app.config.get('REDIS_URL'),
-        broker=app.config.get('broker_url') or app.config.get('REDIS_URL')
-    )
-    celery.conf.update(app.config)
-    
-    class ContextTask(celery.Task):
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
-    
-    celery.Task = ContextTask
-    return celery
-
 # Create app instance
 app = create_app()
-
-# Create Celery instance
-celery = make_celery(app)
 
 
 # ============================================================================

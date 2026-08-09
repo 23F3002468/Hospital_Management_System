@@ -444,7 +444,7 @@ def get_patients():
             patients_query = patients_query.join(Patient.user).filter(
                 Patient.user.has(User.full_name.ilike(f'%{search}%'))
             )
-        
+
         patients = patients_query.all()
         
         return jsonify({

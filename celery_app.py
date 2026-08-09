@@ -11,24 +11,25 @@ against the same instance. That keeps a single source of truth for the beat sche
 from celery import Celery
 from celery.schedules import crontab
 
-# Create Celery instance
+from config import Config
+
 celery = Celery(
     'hospital_tasks',
-    broker='redis://localhost:6379/0',
-    backend='redis://localhost:6379/0'
+    broker=Config.broker_url,
+    backend=Config.result_backend,
 )
 
-# Configure Celery
 celery.conf.update(
-    task_serializer='json',
-    accept_content=['json'],
-    result_serializer='json',
-    timezone='Asia/Kolkata',
-    enable_utc=True,
-    broker_connection_retry_on_startup=True,  # Fix the warning
+    task_serializer=Config.task_serializer,
+    accept_content=Config.accept_content,
+    result_serializer=Config.result_serializer,
+    timezone=Config.timezone,
+    enable_utc=Config.enable_utc,
+    broker_connection_retry_on_startup=True,
 )
 
-# Configure Celery beat schedule
+# Periodic jobs. Task names must match the name= given to @celery.task in
+# celery_worker.py.
 celery.conf.beat_schedule = {
     'send-daily-reminders': {
         'task': 'tasks.send_daily_appointment_reminders',

@@ -14,7 +14,8 @@ that handles scheduled reminders, monthly reports and CSV exports.
   - Daily appointment reminders, emailed at 08:00
   - Monthly doctor activity reports on the 1st at 09:00
   - On-demand CSV export of a patient's treatment history
-- **Redis caching** for read-heavy routes via the `@cached_route` decorator
+- **Redis caching** of the department list, invalidated whenever an admin adds,
+  edits, deactivates or deletes a doctor
 
 ## Tech stack
 
@@ -29,12 +30,12 @@ that handles scheduled reminders, monthly reports and CSV exports.
 ## Project layout
 
 ```
-app.py               Application factory, HTML routes, Celery wiring
+app.py               Application factory and HTML routes
 config.py            Config classes, loads .env
 models.py            SQLAlchemy models
 init_db.py           Creates tables and seeds the default admin
-cache.py             Flask-Caching setup and @cached_route decorator
-celery_app.py        Celery instance and beat schedule
+cache.py             The Flask-Caching instance, cache keys and invalidation
+celery_app.py        The Celery instance and beat schedule
 celery_worker.py     Worker entrypoint; task and email helper definitions
 test_email.py        Manual script to fire the email tasks
 routes/              auth, admin, doctor and patient API blueprints

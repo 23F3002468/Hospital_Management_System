@@ -13,10 +13,6 @@ from timeutils import hospital_now, hospital_today
 # Create Blueprint
 patient_bp = Blueprint('patient', __name__)
 
-# Initialize cache - DON'T create new instance, import from app
-# This will be initialized when the blueprint is registered
-cache = Cache()
-
 
 @patient_bp.route('/dashboard', methods=['GET'])
 @patient_required
@@ -425,13 +421,11 @@ def get_treatment_history():
 def get_departments():
     """Get all departments with doctor counts"""
     try:
-        # Try to get from cache
-        from app import cache
-        departments_data = cache.get('all_departments')
-        
+        departments_data = cache.get(DEPARTMENTS_KEY)
+
         if departments_data is None:
             departments = Department.query.all()
-            
+
             departments_data = [{
                 'id': dept.id,
                 'name': dept.name,
@@ -439,10 +433,10 @@ def get_departments():
                 'doctors_count': dept.doctors_count,
                 'available_doctors': dept.available_doctors_count
             } for dept in departments]
-            
-            # Cache for 5 minutes
-            cache.set('all_departments', departments_data, timeout=300)
-        
+
+            # Cache for 5 minutes; admin doctor changes invalidate it early
+            cache.set(DEPARTMENTS_KEY, departments_data, timeout=300)
+
         return jsonify({'departments': departments_data}), 200
     
     except Exception as e:
@@ -453,8 +447,8 @@ def get_departments():
 def trigger_csv_export():
     """Trigger async CSV export job"""
     try:
-        from tasks import export_patient_treatment_history_csv
-        
+        from celery_app import celery
+
         patient = current_user.patient_profile
 
         # Send by name so the web process never imports the worker module
