@@ -22,15 +22,21 @@ def dashboard():
         patient = current_user.patient_profile
         
         # Get upcoming appointments
-        today = datetime.utcnow().date()
-        upcoming = Appointment.query.filter(
+        today = hospital_today()
+        upcoming = Appointment.query.options(
+            joinedload(Appointment.doctor).joinedload(Doctor.user),
+            joinedload(Appointment.doctor).joinedload(Doctor.department),
+        ).filter(
             Appointment.patient_id == patient.id,
             Appointment.appointment_date >= today,
             Appointment.status == 'Booked'
         ).order_by(Appointment.appointment_date, Appointment.appointment_time).all()
         
         # Get recent appointment history
-        history = Appointment.query.filter(
+        history = Appointment.query.options(
+            joinedload(Appointment.doctor).joinedload(Doctor.user),
+            joinedload(Appointment.doctor).joinedload(Doctor.department),
+        ).filter(
             Appointment.patient_id == patient.id,
             or_(
                 Appointment.appointment_date < today,
@@ -273,7 +279,10 @@ def get_appointments():
         patient = current_user.patient_profile
         status_filter = request.args.get('status')  # 'upcoming', 'past', 'all'
         
-        query = Appointment.query.filter(Appointment.patient_id == patient.id)
+        query = Appointment.query.options(
+            joinedload(Appointment.doctor).joinedload(Doctor.user),
+            joinedload(Appointment.doctor).joinedload(Doctor.department),
+        ).filter(Appointment.patient_id == patient.id)
         
         today = datetime.utcnow().date()
         
@@ -392,7 +401,10 @@ def get_treatment_history():
     try:
         patient = current_user.patient_profile
         
-        treatments = Treatment.query.join(Appointment).filter(
+        treatments = Treatment.query.join(Appointment).options(
+            joinedload(Treatment.appointment).joinedload(Appointment.doctor).joinedload(Doctor.user),
+            joinedload(Treatment.appointment).joinedload(Appointment.doctor).joinedload(Doctor.department),
+        ).filter(
             Appointment.patient_id == patient.id,
             Appointment.status == 'Completed'
         ).order_by(Appointment.appointment_date.desc()).all()

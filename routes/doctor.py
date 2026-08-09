@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_login import current_user
 from datetime import datetime, timedelta, time
-from sqlalchemy import and_
+from sqlalchemy import and_, func
+from sqlalchemy.orm import joinedload
 
 from models import db, Appointment, Treatment, DoctorAvailability, Patient, User
 from routes.auth import doctor_required
@@ -21,7 +22,9 @@ def dashboard():
         today = datetime.utcnow().date()
         
         # Today's appointments
-        today_appointments = Appointment.query.filter(
+        today_appointments = Appointment.query.options(
+            joinedload(Appointment.patient).joinedload(Patient.user)
+        ).filter(
             Appointment.doctor_id == doctor.id,
             Appointment.appointment_date == today,
             Appointment.status == 'Booked'
@@ -86,7 +89,10 @@ def get_appointments():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         
-        query = Appointment.query.filter(Appointment.doctor_id == doctor.id)
+        query = Appointment.query.options(
+            joinedload(Appointment.patient).joinedload(Patient.user),
+            joinedload(Appointment.treatment),
+        ).filter(Appointment.doctor_id == doctor.id)
         
         if status:
             query = query.filter(Appointment.status == status)
@@ -437,8 +443,8 @@ def get_patients():
         # Get unique patients who have appointments with this doctor
         patients_query = db.session.query(Patient).join(Appointment).filter(
             Appointment.doctor_id == doctor.id
-        ).distinct()
-        
+        ).options(joinedload(Patient.user)).distinct()
+
         search = request.args.get('search', '')
         if search:
             patients_query = patients_query.join(Patient.user).filter(
@@ -446,7 +452,19 @@ def get_patients():
             )
 
         patients = patients_query.all()
-        
+
+        # Latest completed visit per patient, in one grouped query rather than
+        # two queries per patient inside the response comprehension.
+        last_visits = dict(
+            db.session.query(
+                Appointment.patient_id,
+                func.max(Appointment.appointment_date)
+            ).filter(
+                Appointment.doctor_id == doctor.id,
+                Appointment.status == 'Completed'
+            ).group_by(Appointment.patient_id).all()
+        )
+
         return jsonify({
             'patients': [{
                 'id': pat.id,
@@ -454,15 +472,7 @@ def get_patients():
                 'age': pat.age,
                 'blood_group': pat.blood_group,
                 'phone': pat.user.phone,
-                'last_visit': Appointment.query.filter_by(
-                    patient_id=pat.id,
-                    doctor_id=doctor.id,
-                    status='Completed'
-                ).order_by(Appointment.appointment_date.desc()).first().appointment_date.isoformat() if Appointment.query.filter_by(
-                    patient_id=pat.id,
-                    doctor_id=doctor.id,
-                    status='Completed'
-                ).first() else None
+                'last_visit': last_visits[pat.id].isoformat() if last_visits.get(pat.id) else None
             } for pat in patients]
         }), 200
         

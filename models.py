@@ -55,18 +55,34 @@ class Department(db.Model):
     
     @property
     def doctors_count(self):
-        """Count total doctors in this department"""
-        return len([d for d in self.doctors if d.user.is_active])
-    
+        """Count active doctors in this department.
+
+        One COUNT query - does not load the doctor or user rows.
+        """
+        return db.session.query(db.func.count(Doctor.id)).join(
+            User, Doctor.user_id == User.id
+        ).filter(
+            Doctor.department_id == self.id,
+            User.is_active.is_(True)
+        ).scalar()
+
     @property
     def available_doctors_count(self):
-        """Count doctors available today"""
-        today = datetime.utcnow().date()
-        count = 0
-        for doctor in self.doctors:
-            if doctor.user.is_active and doctor.is_available_on_date(today):
-                count += 1
-        return count
+        """Count active doctors with an availability slot today.
+
+        One COUNT query. DISTINCT because a doctor may have several slots.
+        """
+        today = hospital_today()
+        return db.session.query(db.func.count(db.distinct(Doctor.id))).join(
+            User, Doctor.user_id == User.id
+        ).join(
+            DoctorAvailability, DoctorAvailability.doctor_id == Doctor.id
+        ).filter(
+            Doctor.department_id == self.id,
+            User.is_active.is_(True),
+            DoctorAvailability.date == today,
+            DoctorAvailability.is_available.is_(True)
+        ).scalar()
 
 
 class Doctor(db.Model):
@@ -101,15 +117,24 @@ class Doctor(db.Model):
     
     @property
     def upcoming_appointments_count(self):
-        """Count upcoming appointments for this doctor"""
-        today = datetime.utcnow().date()
-        return len([a for a in self.appointments 
-                   if a.appointment_date >= today and a.status == 'Booked'])
-    
+        """Count upcoming appointments for this doctor.
+
+        One COUNT query rather than loading every appointment row into memory.
+        """
+        today = hospital_today()
+        return db.session.query(db.func.count(Appointment.id)).filter(
+            Appointment.doctor_id == self.id,
+            Appointment.appointment_date >= today,
+            Appointment.status == 'Booked'
+        ).scalar()
+
     @property
     def completed_appointments_count(self):
-        """Count completed appointments"""
-        return len([a for a in self.appointments if a.status == 'Completed'])
+        """Count completed appointments. One COUNT query."""
+        return db.session.query(db.func.count(Appointment.id)).filter(
+            Appointment.doctor_id == self.id,
+            Appointment.status == 'Completed'
+        ).scalar()
 
 
 class Patient(db.Model):
@@ -145,17 +170,25 @@ class Patient(db.Model):
     
     @property
     def upcoming_appointments(self):
-        """Get list of upcoming appointments"""
-        today = datetime.utcnow().date()
-        return [a for a in self.appointments 
-                if a.appointment_date >= today and a.status == 'Booked']
-    
+        """Upcoming appointments, filtered and ordered by the database."""
+        today = hospital_today()
+        return Appointment.query.filter(
+            Appointment.patient_id == self.id,
+            Appointment.appointment_date >= today,
+            Appointment.status == 'Booked'
+        ).order_by(Appointment.appointment_date, Appointment.appointment_time).all()
+
     @property
     def appointment_history(self):
-        """Get list of past appointments"""
-        today = datetime.utcnow().date()
-        return [a for a in self.appointments 
-                if a.appointment_date < today or a.status in ['Completed', 'Cancelled']]
+        """Past appointments, filtered and ordered by the database."""
+        today = hospital_today()
+        return Appointment.query.filter(
+            Appointment.patient_id == self.id,
+            db.or_(
+                Appointment.appointment_date < today,
+                Appointment.status.in_(['Completed', 'Cancelled'])
+            )
+        ).order_by(Appointment.appointment_date.desc()).all()
 
 
 class DoctorAvailability(db.Model):

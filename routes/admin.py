@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_login import current_user
 from werkzeug.security import generate_password_hash
 from datetime import datetime
-from sqlalchemy import or_
+from sqlalchemy import or_, func
+from sqlalchemy.orm import joinedload
 
 from models import db, User, Doctor, Patient, Department, Appointment, DoctorAvailability
 from routes.auth import admin_required
@@ -36,9 +37,11 @@ def dashboard():
         ).count()
         
         # Recent appointments (last 10)
-        recent_appointments = Appointment.query.order_by(
-            Appointment.created_at.desc()
-        ).limit(10).all()
+        recent_appointments = Appointment.query.options(
+            joinedload(Appointment.patient).joinedload(Patient.user),
+            joinedload(Appointment.doctor).joinedload(Doctor.user),
+            joinedload(Appointment.doctor).joinedload(Doctor.department),
+        ).order_by(Appointment.created_at.desc()).limit(10).all()
         
         return jsonify({
             'statistics': {
@@ -76,8 +79,10 @@ def get_doctors():
         search = request.args.get('search', '')
         status = request.args.get('status', 'active')  # 'active', 'inactive', 'all'
         
-        query = Doctor.query.join(User)
-        
+        query = Doctor.query.join(User).options(
+            joinedload(Doctor.user), joinedload(Doctor.department)
+        )
+
         if department_id:
             query = query.filter(Doctor.department_id == department_id)
         
@@ -90,7 +95,21 @@ def get_doctors():
             query = query.filter(User.is_active == False)
         
         doctors = query.all()
-        
+
+        # Two grouped queries for every doctor's counts, instead of two per doctor.
+        today = hospital_today()
+        upcoming_counts = dict(
+            db.session.query(Appointment.doctor_id, func.count(Appointment.id))
+            .filter(Appointment.appointment_date >= today,
+                    Appointment.status == 'Booked')
+            .group_by(Appointment.doctor_id).all()
+        )
+        completed_counts = dict(
+            db.session.query(Appointment.doctor_id, func.count(Appointment.id))
+            .filter(Appointment.status == 'Completed')
+            .group_by(Appointment.doctor_id).all()
+        )
+
         return jsonify({
             'doctors': [{
                 'id': doc.id,
@@ -104,8 +123,8 @@ def get_doctors():
                 'experience_years': doc.experience_years,
                 'consultation_fee': doc.consultation_fee,
                 'is_active': doc.user.is_active,
-                'upcoming_appointments': doc.upcoming_appointments_count,
-                'completed_appointments': doc.completed_appointments_count
+                'upcoming_appointments': upcoming_counts.get(doc.id, 0),
+                'completed_appointments': completed_counts.get(doc.id, 0)
             } for doc in doctors]
         }), 200
         
@@ -369,8 +388,8 @@ def get_patients():
         search = request.args.get('search', '')
         status = request.args.get('status', 'active')
         
-        query = Patient.query.join(User)
-        
+        query = Patient.query.join(User).options(joinedload(Patient.user))
+
         if search:
             query = query.filter(
                 or_(
@@ -520,8 +539,12 @@ def get_all_appointments():
         doctor_id = request.args.get('doctor_id', type=int)
         patient_id = request.args.get('patient_id', type=int)
         
-        query = Appointment.query
-        
+        query = Appointment.query.options(
+            joinedload(Appointment.patient).joinedload(Patient.user),
+            joinedload(Appointment.doctor).joinedload(Doctor.user),
+            joinedload(Appointment.doctor).joinedload(Doctor.department),
+        )
+
         if status:
             query = query.filter(Appointment.status == status)
         
