@@ -5,6 +5,7 @@ from datetime import datetime
 
 from models import db, User, Patient
 from functools import wraps
+from routes.errors import server_error
 
 # Create Blueprint
 auth_bp = Blueprint('auth', __name__)
@@ -117,7 +118,7 @@ def register():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @auth_bp.route('/login', methods=['POST'])
@@ -148,13 +149,13 @@ def login():
         
         # Get role-specific profile data
         profile_data = {}
-        if user.is_doctor and hasattr(user, 'doctor_profile'):
+        if user.is_doctor and user.doctor_profile is not None:
             profile_data = {
                 'department': user.doctor_profile.department.name,
                 'qualification': user.doctor_profile.qualification,
                 'experience_years': user.doctor_profile.experience_years
             }
-        elif user.is_patient and hasattr(user, 'patient_profile'):
+        elif user.is_patient and user.patient_profile is not None:
             profile_data = {
                 'blood_group': user.patient_profile.blood_group,
                 'age': user.patient_profile.age
@@ -174,7 +175,7 @@ def login():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @auth_bp.route('/logout', methods=['POST'])
@@ -187,7 +188,7 @@ def logout():
         logout_user()
         return jsonify({'message': 'Logout successful'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @auth_bp.route('/me', methods=['GET'])
@@ -199,7 +200,7 @@ def get_current_user():
     try:
         # Get role-specific profile data
         profile_data = {}
-        if current_user.is_doctor and hasattr(current_user, 'doctor_profile'):
+        if current_user.is_doctor and current_user.doctor_profile is not None:
             profile_data = {
                 'department_id': current_user.doctor_profile.department_id,
                 'department': current_user.doctor_profile.department.name,
@@ -208,7 +209,7 @@ def get_current_user():
                 'consultation_fee': current_user.doctor_profile.consultation_fee,
                 'bio': current_user.doctor_profile.bio
             }
-        elif current_user.is_patient and hasattr(current_user, 'patient_profile'):
+        elif current_user.is_patient and current_user.patient_profile is not None:
             profile_data = {
                 'date_of_birth': current_user.patient_profile.date_of_birth.isoformat() if current_user.patient_profile.date_of_birth else None,
                 'age': current_user.patient_profile.age,
@@ -234,7 +235,7 @@ def get_current_user():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @auth_bp.route('/change-password', methods=['POST'])
@@ -266,7 +267,7 @@ def change_password():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @auth_bp.route('/update-profile', methods=['PUT'])
@@ -293,7 +294,7 @@ def update_profile():
             current_user.email = data['email']
         
         # Update role-specific profile
-        if current_user.is_patient and hasattr(current_user, 'patient_profile'):
+        if current_user.is_patient and current_user.patient_profile is not None:
             patient = current_user.patient_profile
             
             if data.get('date_of_birth'):
@@ -313,4 +314,4 @@ def update_profile():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)

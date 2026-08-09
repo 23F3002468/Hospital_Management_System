@@ -1,3 +1,13 @@
+"""The single Celery instance, shared by the web process and the worker.
+
+Import ``celery`` from this module - never construct another instance. Broker and
+backend come from ``config.Config`` so ``REDIS_URL`` in ``.env`` is honoured.
+
+The web process dispatches work by task *name* (``celery.send_task``) and so never
+imports ``celery_worker``; the worker imports this module to register its tasks
+against the same instance. That keeps a single source of truth for the beat schedule.
+"""
+
 from celery import Celery
 from celery.schedules import crontab
 

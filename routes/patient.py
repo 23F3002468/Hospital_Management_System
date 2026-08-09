@@ -1,10 +1,14 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import current_user
 from datetime import datetime, timedelta, time
 from sqlalchemy import and_, or_
-from flask_caching import Cache
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from models import db, Department, Doctor, DoctorAvailability, Appointment, Treatment, Patient, User
 from routes.auth import patient_required
+from routes.errors import server_error
+from cache import cache, DEPARTMENTS_KEY
+from timeutils import hospital_now, hospital_today
 
 # Create Blueprint
 patient_bp = Blueprint('patient', __name__)
@@ -71,7 +75,7 @@ def dashboard():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @patient_bp.route('/doctors', methods=['GET'])
@@ -105,7 +109,7 @@ def search_doctors():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @patient_bp.route('/doctors/<int:doctor_id>/availability', methods=['GET'])
@@ -157,7 +161,7 @@ def get_doctor_availability(doctor_id):
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 @patient_bp.route('/appointments/book', methods=['POST'])
 @patient_required
@@ -239,8 +243,15 @@ def book_appointment():
         )
         
         db.session.add(appointment)
-        db.session.commit()
-        
+        try:
+            db.session.commit()
+        except IntegrityError:
+            # Another request booked this slot between our check and our commit.
+            # The unique index on (doctor_id, date, time) WHERE status='Booked'
+            # is what makes the race safe; this just reports it like the check above.
+            db.session.rollback()
+            return jsonify({'error': 'This time slot is already booked'}), 400
+
         return jsonify({
             'message': 'Appointment booked successfully',
             'appointment': {
@@ -255,7 +266,7 @@ def book_appointment():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @patient_bp.route('/appointments', methods=['GET'])
@@ -302,7 +313,7 @@ def get_appointments():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @patient_bp.route('/appointments/<int:appointment_id>', methods=['GET'])
@@ -347,7 +358,7 @@ def get_appointment_details(appointment_id):
         return jsonify(response), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @patient_bp.route('/appointments/<int:appointment_id>/cancel', methods=['POST'])
@@ -375,7 +386,7 @@ def cancel_appointment(appointment_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @patient_bp.route('/treatment-history', methods=['GET'])
@@ -406,7 +417,7 @@ def get_treatment_history():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @patient_bp.route('/departments', methods=['GET'])
@@ -435,7 +446,7 @@ def get_departments():
         return jsonify({'departments': departments_data}), 200
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
     
 @patient_bp.route('/export-treatment-history', methods=['POST'])
 @patient_required
@@ -445,10 +456,13 @@ def trigger_csv_export():
         from tasks import export_patient_treatment_history_csv
         
         patient = current_user.patient_profile
-        
-        # Trigger async task using .delay()
-        task = export_patient_treatment_history_csv.delay(patient.id)
-        
+
+        # Send by name so the web process never imports the worker module
+        task = celery.send_task(
+            'tasks.export_patient_treatment_history_csv',
+            args=[patient.id]
+        )
+
         return jsonify({
             'message': 'Export job started',
             'task_id': task.id,
@@ -456,8 +470,7 @@ def trigger_csv_export():
         }), 202
         
     except Exception as e:
-        print(f"Error triggering export: {str(e)}")  # Debug print
-        return jsonify({'error': str(e)}), 500
+        return server_error(e, 'Could not start the export job')
 
 @patient_bp.route('/export-status/<task_id>', methods=['GET'])
 @patient_required
@@ -476,10 +489,14 @@ def check_export_status(task_id):
                 'state': task.state,
                 'result': task.result
             }
+        elif task.state == 'FAILURE':
+            # task.info is the worker-side exception - log it, don't ship it
+            current_app.logger.error('Export task %s failed: %s', task_id, task.info)
+            response = {'state': task.state, 'status': 'Export failed'}
         else:
-            response = {'state': task.state, 'status': str(task.info)}
-        
+            response = {'state': task.state, 'status': 'Job is running...'}
+
         return jsonify(response), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)

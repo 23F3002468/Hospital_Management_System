@@ -64,8 +64,15 @@ def create_app(config_name=None):
     
     @login_manager.user_loader
     def load_user(user_id):
-        """Load user by ID for Flask-Login"""
-        return User.query.get(int(user_id))
+        """Load user by ID for Flask-Login.
+
+        Returns None for deactivated users so that blacklisting takes effect
+        immediately instead of waiting for the session cookie to expire.
+        """
+        user = db.session.get(User, int(user_id))
+        if user is None or not user.is_active:
+            return None
+        return user
     
     # Register blueprints
     from routes.auth import auth_bp

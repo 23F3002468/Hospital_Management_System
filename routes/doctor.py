@@ -5,6 +5,8 @@ from sqlalchemy import and_
 
 from models import db, Appointment, Treatment, DoctorAvailability, Patient, User
 from routes.auth import doctor_required
+from routes.errors import server_error
+from timeutils import hospital_today
 
 # Create Blueprint
 doctor_bp = Blueprint('doctor', __name__)
@@ -71,7 +73,7 @@ def dashboard():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @doctor_bp.route('/appointments', methods=['GET'])
@@ -118,7 +120,7 @@ def get_appointments():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @doctor_bp.route('/appointments/<int:appointment_id>', methods=['GET'])
@@ -181,7 +183,7 @@ def get_appointment_details(appointment_id):
         return jsonify(response), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @doctor_bp.route('/appointments/<int:appointment_id>/complete', methods=['POST'])
@@ -241,7 +243,7 @@ def complete_appointment(appointment_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @doctor_bp.route('/appointments/<int:appointment_id>/cancel', methods=['POST'])
@@ -269,7 +271,7 @@ def cancel_appointment(appointment_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @doctor_bp.route('/availability', methods=['GET'])
@@ -301,7 +303,7 @@ def get_availability():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @doctor_bp.route('/availability/set', methods=['POST'])
@@ -363,7 +365,7 @@ def set_availability():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @doctor_bp.route('/availability/<int:slot_id>', methods=['PUT'])
@@ -397,7 +399,7 @@ def update_availability(slot_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @doctor_bp.route('/availability/<int:slot_id>', methods=['DELETE'])
@@ -422,7 +424,7 @@ def delete_availability(slot_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @doctor_bp.route('/patients', methods=['GET'])
@@ -465,7 +467,7 @@ def get_patients():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @doctor_bp.route('/patients/<int:patient_id>/history', methods=['GET'])
@@ -506,4 +508,4 @@ def get_patient_history(patient_id):
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)

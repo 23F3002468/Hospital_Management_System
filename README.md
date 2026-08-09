@@ -38,6 +38,7 @@ celery_app.py        Celery instance and beat schedule
 celery_worker.py     Worker entrypoint; task and email helper definitions
 test_email.py        Manual script to fire the email tasks
 routes/              auth, admin, doctor and patient API blueprints
+routes/errors.py     Shared server_error() helper for 500 responses
 templates/           Jinja/Vue pages
 static/              CSS and JS assets
 exports/             Generated CSV exports (gitignored)

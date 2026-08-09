@@ -209,7 +209,21 @@ class Appointment(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     cancelled_at = db.Column(db.DateTime, nullable=True)
     cancelled_by = db.Column(db.String(20), nullable=True)  # 'patient', 'doctor', or 'admin'
-    
+
+    __table_args__ = (
+        # One live booking per doctor per slot, enforced by the database so that
+        # two concurrent requests cannot both pass the application-level check.
+        # Partial index: cancelled and completed rows are excluded, so a slot
+        # becomes bookable again once it is cancelled.
+        db.Index(
+            'uq_appointment_doctor_slot',
+            'doctor_id', 'appointment_date', 'appointment_time',
+            unique=True,
+            sqlite_where=db.text("status = 'Booked'"),
+            postgresql_where=db.text("status = 'Booked'"),
+        ),
+    )
+
     # Relationship - appointment can have one treatment record
     treatment = db.relationship('Treatment', backref='appointment', uselist=False, cascade='all, delete-orphan')
     

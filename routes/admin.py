@@ -6,6 +6,9 @@ from sqlalchemy import or_
 
 from models import db, User, Doctor, Patient, Department, Appointment, DoctorAvailability
 from routes.auth import admin_required
+from routes.errors import server_error
+from cache import invalidate_departments
+from timeutils import hospital_today
 
 # Create Blueprint
 admin_bp = Blueprint('admin', __name__)
@@ -57,7 +60,7 @@ def dashboard():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 # ============================================================================
@@ -107,7 +110,7 @@ def get_doctors():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @admin_bp.route('/doctors/<int:doctor_id>', methods=['GET'])
@@ -137,7 +140,7 @@ def get_doctor_details(doctor_id):
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @admin_bp.route('/doctors/add', methods=['POST'])
@@ -178,7 +181,7 @@ def add_doctor():
                     existing_user_by_username.password = generate_password_hash(data['password'])
                 
                 # Update doctor profile if exists
-                if hasattr(existing_user_by_username, 'doctor_profile'):
+                if existing_user_by_username.doctor_profile is not None:
                     doctor_profile = existing_user_by_username.doctor_profile
                     doctor_profile.department_id = data['department_id']
                     doctor_profile.qualification = data.get('qualification', '')
@@ -261,7 +264,7 @@ def add_doctor():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 @admin_bp.route('/doctors/<int:doctor_id>', methods=['PUT'])
 @admin_required
@@ -310,7 +313,7 @@ def update_doctor(doctor_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @admin_bp.route('/doctors/<int:doctor_id>/toggle-status', methods=['POST'])
@@ -331,7 +334,7 @@ def toggle_doctor_status(doctor_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @admin_bp.route('/doctors/<int:doctor_id>', methods=['DELETE'])
@@ -350,7 +353,7 @@ def delete_doctor(doctor_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 # ============================================================================
@@ -398,7 +401,7 @@ def get_patients():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 @admin_bp.route('/patients/<int:patient_id>', methods=['GET'])
@@ -439,7 +442,7 @@ def get_patient_details(patient_id):
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 @admin_bp.route('/patients/<int:patient_id>', methods=['PUT'])
 @admin_required
@@ -481,7 +484,7 @@ def update_patient(patient_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 @admin_bp.route('/patients/<int:patient_id>/toggle-status', methods=['POST'])
 @admin_required
@@ -498,7 +501,7 @@ def toggle_patient_status(patient_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 # ============================================================================
@@ -561,7 +564,7 @@ def get_all_appointments():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 @admin_bp.route('/departments', methods=['GET'])
 @admin_required
@@ -580,7 +583,7 @@ def get_departments():
         }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
 
 
 # ============================================================================
@@ -629,4 +632,4 @@ def search():
         return jsonify(results), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return server_error(e)
