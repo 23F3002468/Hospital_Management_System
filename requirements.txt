@@ -1,15 +1,19 @@
+# Versions raised 2026-08-10 to clear 15 known advisories found by pip-audit
+# (7 in Flask-CORS, 6 in Werkzeug, 1 each in Flask and python-dotenv). Re-check
+# with:  pip-audit -r requirements.txt
+#
 # Flask and core extensions
-Flask==3.0.0
+Flask==3.1.3
 Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
-Flask-CORS==4.0.0
+Flask-CORS==6.0.5
 Flask-Caching==2.1.0
 
 # Database
 SQLAlchemy==2.0.23
 
-# Password hashing
-Werkzeug==3.0.1
+# Password hashing (also the WSGI toolkit under Flask)
+Werkzeug==3.1.8
 
 # Redis and Celery for background jobs
 redis==5.0.1
@@ -24,7 +28,12 @@ tzdata==2025.2
 Flask-Mail==0.9.1
 
 # Environment variables
-python-dotenv==1.0.0
+python-dotenv==1.2.2
+
+# Transitive (Flask and Celery both pull it in), pinned to a floor rather
+# than an exact version because two packages have to agree on it.
+# 8.3.0 and below carry PYSEC-2026-2132.
+click>=8.3.3
 
 # Production WSGI server. `python app.py` starts Flask's development server,
 # which must never face the internet - see the note at the bottom of app.py.

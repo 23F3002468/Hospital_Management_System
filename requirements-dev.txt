@@ -10,3 +10,11 @@
 -r requirements.txt
 
 pytest==9.1.1
+
+# Dependency vulnerability scanner. Run before every release:
+#
+#   pip-audit -r requirements.txt
+#
+# The pins were two years stale in Aug 2026 and carried 15 known advisories.
+# This turns finding that out into a command rather than an archaeology dig.
+pip-audit==2.10.1
