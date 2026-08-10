@@ -33,7 +33,8 @@ that handles scheduled reminders, monthly reports and CSV exports.
 app.py               Application factory and HTML routes
 config.py            Config classes, loads .env
 models.py            SQLAlchemy models
-init_db.py           Creates tables and seeds the default admin
+init_db.py           Creates tables and seeds the admin, departments and demo doctors
+demo_data.py         The demo doctors and their availability; runnable standalone
 cache.py             The Flask-Caching instance, cache keys and invalidation
 celery_app.py        The Celery instance and beat schedule
 celery_worker.py     Worker entrypoint; task and email helper definitions
@@ -90,6 +91,36 @@ celery -A celery_worker.celery beat --loglevel=info
 
 `--pool=solo` is required on Windows; drop it on macOS/Linux.
 
+## Demo logins
+
+`init_db.py` seeds enough data to explore the app straight away — no need to log
+in as admin and create a doctor first.
+
+| Role | Username | Password |
+| --- | --- | --- |
+| Admin | `admin` | `admin123` |
+| Doctor | `dr.otho`, `dr.cardia`, `dr.neura`, … | `doctor123` |
+| Patient | register your own from the landing page | — |
+
+Twelve doctors cover all ten departments, each with morning and afternoon
+availability for the next seven days, so a freshly registered patient can browse
+departments and book an appointment immediately. Their names follow the
+department — Dr. Otho in Orthopedics, Dr. Cardia in Cardiology — so it is obvious
+who is who while clicking around. The full list is in `demo_data.py`.
+
+If a demo database has been sitting unused for more than a week its availability
+will have aged out. Top it back up without touching anything else:
+
+```bash
+python demo_data.py
+```
+
+It is idempotent — existing doctors are left alone and only missing availability
+is added.
+
+Change these credentials before deploying anywhere real; they exist so the
+project can be reviewed in one click.
+
 ## Tests
 
 ```bash
@@ -103,9 +134,6 @@ SQLite and an in-process cache, and every test builds its own app with
 `test_client()`: authentication and role guards, booking rules, admin doctor
 management, the department cache, and the model properties behind the
 dashboards.
-
-Default admin login is created by `init_db.py` — see `ADMIN_USERNAME` /
-`ADMIN_PASSWORD` in `config.py`. Change these before deploying anywhere real.
 
 ## Scheduled tasks
 

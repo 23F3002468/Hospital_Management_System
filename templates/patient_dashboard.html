@@ -107,7 +107,7 @@
                     <div v-else>
                         <div v-for="doctor in doctors" :key="doctor.id" class="card mb-2">
                             <div class="card-body py-2">
-                                <h6 class="mb-1" v-text="doctor.name"></h6>
+                                <h6 class="mb-1">Dr. <span v-text="doctor.name"></span></h6>
                                 <small class="text-muted d-block" v-text="doctor.qualification"></small>
                                 <small class="text-muted">
                                     <i class="bi bi-briefcase"></i>
@@ -185,7 +185,7 @@
                         <p class="mt-2">Loading availability...</p>
                     </div>
                     <div v-else-if="selectedDoctor">
-                        <h6>Doctor: <span v-text="selectedDoctor.name"></span></h6>
+                        <h6>Doctor: Dr. <span v-text="selectedDoctor.name"></span></h6>
                         <p class="text-muted" v-text="selectedDoctor.department"></p>
                         <hr>
                         <div v-if="availability.length === 0" class="alert alert-warning">

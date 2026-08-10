@@ -5,6 +5,7 @@ Run this once to set up the database
 """
 
 from app import app
+from demo_data import DEMO_DOCTOR_PASSWORD, create_demo_doctors
 from models import db, User, Department
 from werkzeug.security import generate_password_hash
 from datetime import datetime
@@ -34,7 +35,11 @@ def init_database():
         # Create default departments
         print("\nCreating default departments...")
         create_default_departments()
-        
+
+        # Create demo doctors so the patient view has something to show
+        print("\nCreating demo doctors...")
+        create_demo_doctors()
+
         print("\nDatabase initialization complete.")
         print("\n" + "="*50)
         print("DEFAULT ADMIN CREDENTIALS:")
@@ -44,6 +49,11 @@ def init_database():
         print(f"Password: {app.config['ADMIN_PASSWORD']}")
         print("="*50)
         print("IMPORTANT: change the admin password after first login.")
+        print("="*50)
+        print("DEMO DOCTOR LOGINS:")
+        print("="*50)
+        print(f"Usernames: dr.otho, dr.cardia, dr.pedia, ... (see demo_data.py)")
+        print(f"Password:  {DEMO_DOCTOR_PASSWORD}")
         print("="*50 + "\n")
 
 
@@ -164,7 +174,8 @@ def reset_database():
         
         create_admin_user()
         create_default_departments()
-        
+        create_demo_doctors()
+
         print("Database reset complete.")
 
 
