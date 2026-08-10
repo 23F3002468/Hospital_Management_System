@@ -6,6 +6,7 @@ from datetime import datetime
 from models import db, User, Patient
 from functools import wraps
 from routes.errors import server_error
+from routes.validators import password_error
 
 # Create Blueprint
 auth_bp = Blueprint('auth', __name__)
@@ -67,6 +68,10 @@ def register():
             if not data.get(field):
                 return jsonify({'error': f'{field} is required'}), 400
         
+        error = password_error(data.get('password'))
+        if error:
+            return jsonify({'error': error}), 400
+
         # Check if username already exists
         if User.query.filter_by(username=data['username']).first():
             return jsonify({'error': 'Username already exists'}), 400
@@ -255,9 +260,10 @@ def change_password():
         if not check_password_hash(current_user.password, data['old_password']):
             return jsonify({'error': 'Incorrect old password'}), 401
         
-        # Validate new password
-        if len(data['new_password']) < 6:
-            return jsonify({'error': 'New password must be at least 6 characters long'}), 400
+        # Validate new password against the same floor as registration
+        error = password_error(data['new_password'])
+        if error:
+            return jsonify({'error': error}), 400
         
         # Update password
         current_user.password = generate_password_hash(data['new_password'])

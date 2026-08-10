@@ -14,7 +14,7 @@ from models import Patient, User, db
 REGISTRATION = {
     'username': 'newpatient',
     'email': 'new@example.com',
-    'password': 'secret1',
+    'password': 'secret123',
     'full_name': 'New Patient',
     'phone': '9000000000',
     'date_of_birth': '1995-03-01',

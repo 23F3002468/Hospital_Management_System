@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 from models import db, User, Doctor, Patient, Department, Appointment, DoctorAvailability
 from routes.auth import admin_required
 from routes.errors import server_error
+from routes.validators import password_error
 from cache import invalidate_departments
 from timeutils import hospital_today
 
@@ -174,6 +175,10 @@ def add_doctor():
         if not all(data.get(field) for field in required):
             return jsonify({'error': 'Missing required fields'}), 400
         
+        error = password_error(data.get('password'))
+        if error:
+            return jsonify({'error': error}), 400
+
         # Check if department exists
         department = Department.query.get(data['department_id'])
         if not department:

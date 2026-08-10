@@ -18,7 +18,7 @@ from models import Appointment, Doctor, Treatment, User, db
 NEW_DOCTOR = {
     'username': 'doc_new',
     'email': 'doc_new@example.com',
-    'password': 'secret1',
+    'password': 'secret123',
     'full_name': 'Doc New',
     'phone': '9111111111',
     'qualification': 'MD',
