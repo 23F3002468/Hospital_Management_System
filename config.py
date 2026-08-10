@@ -36,9 +36,31 @@ class Config:
     CACHE_REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
     CACHE_DEFAULT_TIMEOUT = 300  # 5 minutes default cache timeout
     
-    # Flask-Login configuration
+    # Session and "remember me" cookies
+    #
+    # The login lives entirely in these cookies, so their flags are the
+    # difference between a session that can be stolen and one that cannot.
+    #
+    # HTTPONLY keeps JavaScript away from them. SAMESITE='Lax' stops another
+    # site from riding the cookie on a cross-site POST, which is the app's only
+    # CSRF defence - there are no CSRF tokens. SECURE is deliberately left off
+    # here because development runs on plain http://localhost and the browser
+    # would refuse to store a Secure cookie; ProductionConfig turns it on.
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = False
+
     REMEMBER_COOKIE_DURATION = timedelta(days=7)
-    
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = 'Lax'
+    REMEMBER_COOKIE_SECURE = False
+
+    # Only applies to sessions marked permanent, which this app does not do -
+    # its session cookie already dies with the browser. Set so that turning
+    # permanent sessions on later cannot silently inherit Flask's 31-day default.
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=12)
+
+
     # Pagination
     ITEMS_PER_PAGE = 10
     
@@ -72,9 +94,18 @@ class DevelopmentConfig(Config):
 
 
 class ProductionConfig(Config):
-    """Production environment configuration"""
+    """Production environment configuration.
+
+    Assumes TLS in front of the app. The Secure flags below mean a browser will
+    refuse to send the login cookie over plain http - so if you deploy this
+    without HTTPS, nobody can log in. That failure is the intended one: the
+    alternative is a session cookie travelling in clear text.
+    """
     DEBUG = False
     TESTING = False
+
+    SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
 
 
 class TestingConfig(Config):

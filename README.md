@@ -117,10 +117,22 @@ FLASK_ENV=production
 SECRET_KEY=<64 hex chars, e.g. python -c "import secrets; print(secrets.token_hex(32))">
 DATABASE_URL=<your database>
 REDIS_URL=<your redis>
+TRUST_PROXY_HOPS=1        # only if a reverse proxy sits in front; see below
 ```
 
-`FLASK_ENV=production` loads `ProductionConfig`, which turns debug off. Put TLS
-in front of the app — the session cookie carries the login.
+`FLASK_ENV=production` loads `ProductionConfig`, which turns debug off and marks
+the session and "remember me" cookies `Secure`, `HttpOnly` and `SameSite=Lax`.
+
+**TLS is not optional.** `Secure` means the browser will not send the login
+cookie over plain `http://`, so an HTTPS-less deployment is one where nobody can
+log in. That is the intended failure — the alternative is a session cookie
+travelling in clear text.
+
+**Behind a reverse proxy**, set `TRUST_PROXY_HOPS` to the number of proxies in
+front of the app. Without it Flask sees the proxy's address and `http://`, so
+redirects come out wrong. With it, `X-Forwarded-For` / `-Proto` / `-Host` are
+honoured. Leave it unset when nothing is in front — those headers can be spoofed
+by anyone talking to the app directly.
 
 ## Demo logins
 

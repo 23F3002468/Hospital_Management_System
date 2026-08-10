@@ -124,3 +124,68 @@ def test_production_config_has_debug_off():
 
     assert ProductionConfig.DEBUG is False
     assert ProductionConfig.TESTING is False
+
+
+# ---------------------------------------------------------------------------
+# Cookie hardening - the login lives in these cookies
+# ---------------------------------------------------------------------------
+
+def cookie_named(response, name):
+    for header in response.headers.getlist('Set-Cookie'):
+        if header.startswith(f'{name}='):
+            return header
+    return None
+
+
+def test_session_cookie_is_httponly_and_samesite(client, seed):
+    """SameSite is this app's only CSRF defence - there are no tokens."""
+    response = client.post('/api/auth/login',
+                           json={'username': 'pat1', 'password': 'pw'})
+    cookie = cookie_named(response, 'session')
+    assert cookie is not None, 'login did not set a session cookie'
+    assert 'HttpOnly' in cookie
+    assert 'SameSite=Lax' in cookie
+
+
+def test_remember_cookie_is_hardened_too(client, seed):
+    """It outlives the browser session, so it matters more, not less."""
+    response = client.post('/api/auth/login',
+                           json={'username': 'pat1', 'password': 'pw', 'remember': True})
+    cookie = cookie_named(response, 'remember_token')
+    assert cookie is not None, 'remember=True did not set a remember cookie'
+    assert 'HttpOnly' in cookie
+    assert 'SameSite=Lax' in cookie
+
+
+def test_cookies_are_not_secure_in_development(app):
+    """Development runs on plain http://localhost; a Secure cookie would be
+    dropped by the browser and nobody could log in locally."""
+    from config import DevelopmentConfig
+
+    assert DevelopmentConfig.SESSION_COOKIE_SECURE is False
+
+
+def test_production_marks_both_cookies_secure():
+    from config import ProductionConfig
+
+    assert ProductionConfig.SESSION_COOKIE_SECURE is True
+    assert ProductionConfig.REMEMBER_COOKIE_SECURE is True
+    assert ProductionConfig.SESSION_COOKIE_HTTPONLY is True
+    assert ProductionConfig.REMEMBER_COOKIE_HTTPONLY is True
+    assert ProductionConfig.SESSION_COOKIE_SAMESITE == 'Lax'
+    assert ProductionConfig.REMEMBER_COOKIE_SAMESITE == 'Lax'
+
+
+def test_session_lifetime_is_not_flasks_month_long_default():
+    from datetime import timedelta
+
+    from config import Config
+
+    assert Config.PERMANENT_SESSION_LIFETIME <= timedelta(hours=24)
+
+
+def test_proxy_headers_are_not_trusted_by_default(app):
+    """X-Forwarded-* is spoofable by a direct client, so ProxyFix is opt-in."""
+    from werkzeug.middleware.proxy_fix import ProxyFix
+
+    assert not isinstance(app.wsgi_app, ProxyFix)

@@ -22,10 +22,24 @@ def create_app(config_name=None):
         config_name = os.environ.get('FLASK_ENV', 'default')
     
     app = Flask(__name__)
-    
+
     # Load configuration
     app.config.from_object(config[config_name])
-    
+
+    # Behind a reverse proxy (nginx, Caddy, a platform router), the app sees the
+    # proxy's address and http:// unless it reads the X-Forwarded-* headers. It
+    # needs the real scheme to build correct URLs and to know the connection was
+    # TLS. Those headers are trivially spoofed by a direct client, so this is
+    # opt-in: set TRUST_PROXY_HOPS to the number of proxies actually in front of
+    # the app, and leave it unset when nothing is.
+    proxy_hops = int(os.environ.get('TRUST_PROXY_HOPS', '0'))
+    if proxy_hops > 0:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app,
+            x_for=proxy_hops, x_proto=proxy_hops, x_host=proxy_hops, x_prefix=proxy_hops,
+        )
+
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
