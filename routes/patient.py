@@ -221,15 +221,17 @@ def book_appointment():
         if existing_appointments >= 1:  # Only 1 appointment per half-hour slot
             return jsonify({'error': 'This time slot is already booked'}), 400
         
-        # Check for duplicate appointment for this patient
+        # The patient cannot be in two places at once: reject the slot if they
+        # are already booked at this date and time with *any* doctor. Filtering
+        # on doctor_id here as well would make this unreachable, since the slot
+        # check above already rejects that exact combination.
         existing = Appointment.query.filter(
             Appointment.patient_id == patient.id,
-            Appointment.doctor_id == doctor_id,
             Appointment.appointment_date == apt_date,
             Appointment.appointment_time == apt_time,
             Appointment.status == 'Booked'
         ).first()
-        
+
         if existing:
             return jsonify({'error': 'You already have an appointment at this time'}), 400
         

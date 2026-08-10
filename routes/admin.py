@@ -358,11 +358,32 @@ def toggle_doctor_status(doctor_id):
 @admin_bp.route('/doctors/<int:doctor_id>', methods=['DELETE'])
 @admin_required
 def delete_doctor(doctor_id):
-    """Delete doctor (use toggle-status for blacklisting instead)"""
+    """Delete a doctor who has no appointment history.
+
+    Refuses the delete once any appointment references the doctor. Removing
+    the row would either strand those appointments (and the treatment records
+    hanging off them) or, on SQLite, fail the NOT NULL constraint on
+    appointment.doctor_id with an opaque 500. Blacklisting via
+    /doctors/<id>/toggle-status is the intended way to retire a doctor who
+    has seen patients.
+    """
     try:
         doctor = Doctor.query.get_or_404(doctor_id)
         user = doctor.user
-        
+
+        appointment_count = db.session.query(
+            db.func.count(Appointment.id)
+        ).filter(Appointment.doctor_id == doctor.id).scalar()
+
+        if appointment_count:
+            return jsonify({
+                'error': (
+                    f'Cannot delete this doctor: {appointment_count} appointment(s) '
+                    'reference them. Deactivate the doctor instead to remove them '
+                    'from booking while keeping patient records intact.'
+                )
+            }), 409
+
         db.session.delete(doctor)
         db.session.delete(user)
         db.session.commit()
