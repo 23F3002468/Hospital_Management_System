@@ -1,5 +1,11 @@
-"""
-Test email functionality
+"""Fire the two scheduled email tasks by hand.
+
+A manual script, not part of the pytest suite - it runs the real tasks against
+the real database and actually sends mail (to the Mailtrap sandbox inbox
+configured in .env). Named ``send_test_email`` rather than ``test_email`` so
+pytest does not collect it.
+
+    python send_test_email.py
 """
 from celery_worker import (
     send_daily_appointment_reminders,

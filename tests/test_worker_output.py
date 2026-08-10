@@ -14,7 +14,7 @@ import pathlib
 
 import pytest
 
-CONSOLE_SCRIPTS = ['init_db.py', 'test_email.py']
+CONSOLE_SCRIPTS = ['init_db.py', 'send_test_email.py', 'demo_data.py']
 
 
 def source(app, name):

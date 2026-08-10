@@ -39,7 +39,7 @@ cache.py             The Flask-Caching instance, cache keys and invalidation
 celery_app.py        The Celery instance and beat schedule
 celery_worker.py     Worker entrypoint; task and email helper definitions
 timeutils.py         Hospital-local date/time helpers
-test_email.py        Manual script to fire the email tasks (not a pytest test)
+send_test_email.py   Manual script to fire the email tasks (not a pytest test)
 routes/              auth, admin, doctor and patient API blueprints
 routes/errors.py     Shared server_error() helper for 500 responses
 tests/               pytest suite; conftest.py holds the fixtures
@@ -151,7 +151,7 @@ the scheduler and to a doctor's dashboard. `timeutils.hospital_today()` /
 To trigger the email tasks manually without waiting for the schedule:
 
 ```bash
-python test_email.py
+python send_test_email.py
 ```
 
 Sent mail lands in your Mailtrap inbox rather than real inboxes.
