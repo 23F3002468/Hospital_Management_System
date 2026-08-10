@@ -19,11 +19,19 @@ from models import db, Appointment, Doctor, Treatment, Patient, User
 
 # Import task decorators and functions
 from celery.schedules import crontab
+from celery.utils.log import get_task_logger
 from datetime import datetime, timedelta
 import csv
 import io
 
 from timeutils import hospital_today
+
+# Worker output goes through Celery's task logger, not print(). It carries the
+# task name and id, honours --loglevel, and is routed wherever the worker's
+# logging is configured. print() also writes through the console's encoding -
+# on a stock Windows terminal that is cp1252, and a single emoji in the output
+# raised UnicodeEncodeError and killed the task.
+logger = get_task_logger(__name__)
 
 # ============================================================================
 # DEFINE TASKS HERE
@@ -40,7 +48,7 @@ def send_daily_appointment_reminders():
             Appointment.status == 'Booked'
         ).all()
         
-        print(f"Found {len(appointments)} appointments for today")
+        logger.info("Found %d appointments for today", len(appointments))
         
         for appointment in appointments:
             patient = appointment.patient.user
@@ -62,7 +70,7 @@ Please arrive 10 minutes early.
 Hospital Management System
             """
             
-            print(f"Sending reminder to {patient.full_name} ({patient.email})")
+            logger.info("Sending reminder to %s (%s)", patient.full_name, patient.email)
             
             # Send email
 
@@ -72,10 +80,8 @@ Hospital Management System
                 body=message
             )
             
-            if email_sent:
-                print(f"✅ Email sent successfully")
-            else:
-                print(f"❌ Email failed")
+            if not email_sent:
+                logger.warning("Reminder email to %s failed", patient.email)
         
         return f"Sent {len(appointments)} reminders"
 
@@ -91,7 +97,7 @@ def send_monthly_doctor_reports():
         
         doctors = Doctor.query.join(User).filter(User.is_active == True).all()
         
-        print(f"Generating reports for {len(doctors)} doctors")
+        logger.info("Generating reports for %d doctors", len(doctors))
         
         for doctor in doctors:
             appointments = Appointment.query.filter(
@@ -104,8 +110,11 @@ def send_monthly_doctor_reports():
             completed = len([a for a in appointments if a.status == 'Completed'])
             cancelled = len([a for a in appointments if a.status == 'Cancelled'])
             
-            print(f"Sending report to Dr. {doctor.user.full_name} ({doctor.user.email})")
-            print(f"Stats: {total_appointments} total, {completed} completed, {cancelled} cancelled")
+            logger.info(
+                "Report for Dr. %s (%s): %d total, %d completed, %d cancelled",
+                doctor.user.full_name, doctor.user.email,
+                total_appointments, completed, cancelled,
+            )
         
         return f"Sent reports to {len(doctors)} doctors"
 
@@ -158,7 +167,7 @@ def export_patient_treatment_history_csv(patient_id):
         with open(filepath, 'w', newline='') as f:
             f.write(csv_content)
         
-        print(f"CSV exported: {filepath}")
+        logger.info("CSV exported: %s (%d records)", filepath, len(treatments))
         
         return {
             'success': True,
@@ -194,12 +203,12 @@ def send_email(to_email, subject, body, html=False):
         with flask_app.app_context():
             mail.send(msg)
         
-        print(f"✅ Email sent to {to_email}")
+        logger.info("Email sent to %s", to_email)
         return True
-    except Exception as e:
-        print(f"❌ Failed to send email to {to_email}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        # exception() logs the traceback through the same handler as everything
+        # else, instead of print_exc() writing straight to stderr.
+        logger.exception("Failed to send email to %s", to_email)
         return False
 
-print("✅ Celery worker loaded with tasks")
+logger.info("Celery worker loaded with tasks")

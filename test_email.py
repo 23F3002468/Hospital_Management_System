@@ -18,5 +18,5 @@ print("=" * 60)
 result2 = send_monthly_doctor_reports()
 print(f"\nResult: {result2}\n")
 
-print("✅ Tests completed! Check Mailtrap inbox.")
-print("📧 Go to: https://mailtrap.io/inboxes")
+print("Tests completed. Check the Mailtrap inbox.")
+print("Go to: https://mailtrap.io/inboxes")

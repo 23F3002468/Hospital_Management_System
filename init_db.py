@@ -15,27 +15,27 @@ def init_database():
     Initialize database with tables and default data
     """
     with app.app_context():
-        print("🏥 Initializing Hospital Management System Database...")
+        print("Initializing Hospital Management System database...")
         
         # Drop all existing tables (WARNING: This deletes all data!)
         # Comment out the next line if you want to keep existing data
-        print("⚠️  Dropping existing tables...")
+        print("WARNING: dropping existing tables...")
         db.drop_all()
         
         # Create all tables
-        print("📋 Creating database tables...")
+        print("Creating database tables...")
         db.create_all()
-        print("✅ Database tables created successfully!")
+        print("  tables created")
         
         # Create default admin user
-        print("\n👤 Creating default admin user...")
+        print("\nCreating default admin user...")
         create_admin_user()
         
         # Create default departments
-        print("\n🏢 Creating default departments...")
+        print("\nCreating default departments...")
         create_default_departments()
         
-        print("\n✨ Database initialization complete!")
+        print("\nDatabase initialization complete.")
         print("\n" + "="*50)
         print("DEFAULT ADMIN CREDENTIALS:")
         print("="*50)
@@ -43,7 +43,7 @@ def init_database():
         print(f"Email: {app.config['ADMIN_EMAIL']}")
         print(f"Password: {app.config['ADMIN_PASSWORD']}")
         print("="*50)
-        print("⚠️  IMPORTANT: Change the admin password after first login!")
+        print("IMPORTANT: change the admin password after first login.")
         print("="*50 + "\n")
 
 
@@ -55,7 +55,7 @@ def create_admin_user():
     existing_admin = User.query.filter_by(username=app.config['ADMIN_USERNAME']).first()
     
     if existing_admin:
-        print(f"⚠️  Admin user '{app.config['ADMIN_USERNAME']}' already exists. Skipping...")
+        print(f"  admin user '{app.config['ADMIN_USERNAME']}' already exists, skipping")
         return
     
     # Create admin user
@@ -74,7 +74,7 @@ def create_admin_user():
     db.session.add(admin)
     db.session.commit()
     
-    print(f"✅ Admin user '{app.config['ADMIN_USERNAME']}' created successfully!")
+    print(f"  admin user '{app.config['ADMIN_USERNAME']}' created")
 
 
 def create_default_departments():
@@ -128,7 +128,7 @@ def create_default_departments():
         # Check if department already exists
         existing_dept = Department.query.filter_by(name=dept_data['name']).first()
         if existing_dept:
-            print(f"  ⚠️  Department '{dept_data['name']}' already exists. Skipping...")
+            print(f"  department '{dept_data['name']}' already exists, skipping")
             continue
         
         department = Department(
@@ -137,10 +137,10 @@ def create_default_departments():
             created_at=datetime.utcnow()
         )
         db.session.add(department)
-        print(f"  ✅ Created department: {dept_data['name']}")
+        print(f"  created department: {dept_data['name']}")
     
     db.session.commit()
-    print("✅ All default departments created successfully!")
+    print("All default departments created.")
 
 
 def reset_database():
@@ -148,24 +148,24 @@ def reset_database():
     Reset database - drops all tables and recreates them
     WARNING: This will delete ALL data!
     """
-    response = input("⚠️  WARNING: This will DELETE ALL DATA. Are you sure? (yes/no): ")
+    response = input("WARNING: this will DELETE ALL DATA. Are you sure? (yes/no): ")
     if response.lower() != 'yes':
-        print("❌ Database reset cancelled.")
+        print("Database reset cancelled.")
         return
     
     with app.app_context():
-        print("🗑️  Dropping all tables...")
+        print("Dropping all tables...")
         db.drop_all()
-        print("✅ All tables dropped.")
+        print("  all tables dropped")
         
-        print("📋 Creating fresh tables...")
+        print("Creating fresh tables...")
         db.create_all()
-        print("✅ Fresh tables created.")
+        print("  fresh tables created")
         
         create_admin_user()
         create_default_departments()
         
-        print("✅ Database reset complete!")
+        print("Database reset complete.")
 
 
 if __name__ == '__main__':
