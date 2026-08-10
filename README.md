@@ -38,9 +38,10 @@ cache.py             The Flask-Caching instance, cache keys and invalidation
 celery_app.py        The Celery instance and beat schedule
 celery_worker.py     Worker entrypoint; task and email helper definitions
 timeutils.py         Hospital-local date/time helpers
-test_email.py        Manual script to fire the email tasks
+test_email.py        Manual script to fire the email tasks (not a pytest test)
 routes/              auth, admin, doctor and patient API blueprints
 routes/errors.py     Shared server_error() helper for 500 responses
+tests/               pytest suite; conftest.py holds the fixtures
 templates/           Jinja/Vue pages
 static/              CSS and JS assets
 exports/             Generated CSV exports (gitignored)
@@ -88,6 +89,20 @@ celery -A celery_worker.celery beat --loglevel=info
 ```
 
 `--pool=solo` is required on Windows; drop it on macOS/Linux.
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+No Redis and no database server needed — `TestingConfig` runs on an in-memory
+SQLite and an in-process cache, and every test builds its own app with
+`create_app('testing')`. The suite covers the API end to end through
+`test_client()`: authentication and role guards, booking rules, admin doctor
+management, the department cache, and the model properties behind the
+dashboards.
 
 Default admin login is created by `init_db.py` — see `ADMIN_USERNAME` /
 `ADMIN_PASSWORD` in `config.py`. Change these before deploying anywhere real.

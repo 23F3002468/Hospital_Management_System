@@ -1,0 +1,12 @@
+# Development and test dependencies.
+#
+#   pip install -r requirements-dev.txt
+#   pytest
+#
+# Kept separate from requirements.txt so a deployment does not install the test
+# tooling. The suite needs no Redis and no live database - TestingConfig uses an
+# in-memory SQLite and SimpleCache.
+
+-r requirements.txt
+
+pytest==9.1.1

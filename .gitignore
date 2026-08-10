@@ -35,3 +35,6 @@ exports/
 *.backup
 *.bak
 static/css/*.png
+
+# pytest
+.pytest_cache/
