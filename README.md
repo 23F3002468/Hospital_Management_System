@@ -79,7 +79,7 @@ python init_db.py
 Three processes, each in its own terminal:
 
 ```bash
-# 1. Flask app  -> http://localhost:5000
+# 1. Flask app  -> http://127.0.0.1:5000
 python app.py
 
 # 2. Celery worker
@@ -90,6 +90,37 @@ celery -A celery_worker.celery beat --loglevel=info
 ```
 
 `--pool=solo` is required on Windows; drop it on macOS/Linux.
+
+`python app.py` starts Flask's **development** server: debug mode on, bound to
+localhost. To reach it from another device on your network, set
+`FLASK_RUN_HOST=0.0.0.0` — but only on a network you trust, because the debugger
+that comes with debug mode executes Python on the server.
+
+## Deploying
+
+Do **not** deploy with `python app.py`. It refuses to start when
+`FLASK_ENV=production`, and for good reason: the development server is
+single-threaded and ships an interactive debugger. Use a real WSGI server:
+
+```bash
+# Windows
+waitress-serve --host=0.0.0.0 --port=8000 app:app
+
+# Linux / macOS
+gunicorn --bind 0.0.0.0:8000 app:app
+```
+
+Set these in the environment first:
+
+```bash
+FLASK_ENV=production
+SECRET_KEY=<64 hex chars, e.g. python -c "import secrets; print(secrets.token_hex(32))">
+DATABASE_URL=<your database>
+REDIS_URL=<your redis>
+```
+
+`FLASK_ENV=production` loads `ProductionConfig`, which turns debug off. Put TLS
+in front of the app — the session cookie carries the login.
 
 ## Demo logins
 

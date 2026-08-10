@@ -26,6 +26,11 @@ Flask-Mail==0.9.1
 # Environment variables
 python-dotenv==1.0.0
 
+# Production WSGI server. `python app.py` starts Flask's development server,
+# which must never face the internet - see the note at the bottom of app.py.
+# Pure Python and cross-platform; on Linux/macOS gunicorn is the usual choice.
+waitress==3.0.2
+
 # ---------------------------------------------------------------------------
 # Not currently imported anywhere - removed from the install set. Re-add if the
 # matching feature is built out.

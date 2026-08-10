@@ -172,4 +172,26 @@ app = create_app()
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Development server only.
+    #
+    # Never deploy by running this file. `debug` used to be hardcoded to True
+    # here, which serves the Werkzeug debugger - an interactive console that
+    # executes Python on the server - and the old host of '0.0.0.0' offered it
+    # to every machine on the network. Debug now follows the loaded config, so
+    # ProductionConfig cannot switch it on, and the server binds to localhost
+    # unless you deliberately widen it.
+    config_name = os.environ.get('FLASK_ENV', 'default')
+    if config_name == 'production':
+        raise SystemExit(
+            'Refusing to start the development server with FLASK_ENV=production.\n'
+            'Serve the app through a WSGI server instead:\n'
+            '    waitress-serve --host=0.0.0.0 --port=8000 app:app     (Windows)\n'
+            '    gunicorn --bind 0.0.0.0:8000 app:app                  (Linux/macOS)'
+        )
+
+    # Set FLASK_RUN_HOST=0.0.0.0 to reach the dev server from another device.
+    # Only do that on a network you trust - with debug on it is a remote shell.
+    host = os.environ.get('FLASK_RUN_HOST', '127.0.0.1')
+    port = int(os.environ.get('FLASK_RUN_PORT', '5000'))
+
+    app.run(debug=app.config['DEBUG'], host=host, port=port)

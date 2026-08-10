@@ -86,3 +86,41 @@ def test_testing_config_does_not_touch_the_real_database(app):
     """Guards the incident in the fixes log: a probe once wrote into hospital.db."""
     assert app.config['SQLALCHEMY_DATABASE_URI'] == 'sqlite:///:memory:'
     assert app.config['CACHE_TYPE'] == 'SimpleCache'
+
+
+# ---------------------------------------------------------------------------
+# The development server must not be deployable
+# ---------------------------------------------------------------------------
+
+def test_app_run_does_not_hardcode_debug(app):
+    """`app.run(debug=True, host='0.0.0.0')` served the Werkzeug debugger - an
+    interactive Python console - to the whole network. Debug must come from the
+    loaded config so ProductionConfig can switch it off.
+    """
+    import ast
+    import pathlib
+
+    tree = ast.parse(
+        (pathlib.Path(app.root_path) / 'app.py').read_text(encoding='utf-8'))
+
+    runs = [
+        node for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute) and node.func.attr == 'run'
+    ]
+    assert runs, 'expected app.run() to still exist for local development'
+
+    for call in runs:
+        for keyword in call.keywords:
+            if keyword.arg in ('debug', 'host'):
+                assert not isinstance(keyword.value, ast.Constant), (
+                    f'app.run({keyword.arg}=...) is a hardcoded literal at line '
+                    f'{call.lineno}; it must be read from config or the environment'
+                )
+
+
+def test_production_config_has_debug_off():
+    from config import ProductionConfig
+
+    assert ProductionConfig.DEBUG is False
+    assert ProductionConfig.TESTING is False
