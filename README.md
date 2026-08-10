@@ -169,8 +169,17 @@ python demo_data.py
 It is idempotent — existing doctors are left alone and only missing availability
 is added.
 
-Change these credentials before deploying anywhere real; they exist so the
-project can be reviewed in one click.
+**The doctor logins are deliberate, and they stay.** Half of what this project
+does only exists behind a doctor account — setting availability, completing an
+appointment, recording a diagnosis, reading a patient's history. A reviewer who
+can only sign in as a patient sees a booking form and nothing else. Published
+credentials are the price of a one-click walkthrough, and they are the same
+trade already made for `admin` / `admin123`.
+
+What that costs, stated plainly: **anyone who finds a deployment of this can log
+in as a doctor or an admin.** So a public instance must hold demo data only.
+Never point this at real patient records, and if you ever need to, read
+`ADMIN_PASSWORD` from the environment and skip `demo_data.py` at setup.
 
 ## Tests
 
