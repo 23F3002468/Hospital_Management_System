@@ -105,70 +105,71 @@ def create_app(config_name=None):
     @app.errorhandler(401)
     def unauthorized(error):
         return jsonify({'error': 'Unauthorized - Please login'}), 401
-    
+
+    # ------------------------------------------------------------------
+    # HTML ROUTES (serve the Vue.js pages)
+    #
+    # These must be registered inside the factory. login_manager.login_view
+    # points at 'index', so an app built without them cannot resolve the
+    # login redirect and raises BuildError on the first anonymous request.
+    # ------------------------------------------------------------------
+
+    @app.route('/')
+    def index():
+        """Landing page / Login"""
+        if current_user.is_authenticated:
+            # Redirect to appropriate dashboard
+            if current_user.is_admin:
+                return redirect('/admin/dashboard')
+            elif current_user.is_doctor:
+                return redirect('/doctor/dashboard')
+            elif current_user.is_patient:
+                return redirect('/patient/dashboard')
+        return render_template('index.html')
+
+    @app.route('/register')
+    def register_page():
+        """Registration page"""
+        return render_template('register.html')
+
+    @app.route('/admin/dashboard')
+    @login_required
+    def admin_dashboard():
+        """Admin dashboard page"""
+        if not current_user.is_admin:
+            return redirect('/')
+        return render_template('admin_dashboard.html')
+
+    @app.route('/doctor/dashboard')
+    @login_required
+    def doctor_dashboard():
+        """Doctor dashboard page"""
+        if not current_user.is_doctor:
+            return redirect('/')
+        return render_template('doctor_dashboard.html')
+
+    @app.route('/patient/dashboard')
+    @login_required
+    def patient_dashboard():
+        """Patient dashboard page"""
+        if not current_user.is_patient:
+            return redirect('/')
+        return render_template('patient_dashboard.html')
+
+    @app.route('/patient/history')
+    @login_required
+    def patient_history():
+        """Patient treatment history page"""
+        if not current_user.is_patient:
+            return redirect('/')
+        return render_template('patient_history.html')
+
     return app
 
-# Create app instance
+
+# Module-level instance for `flask run` and `python app.py`.
 app = create_app()
 
-
-# ============================================================================
-# HTML ROUTES (Serve Vue.js pages)
-# ============================================================================
-
-@app.route('/')
-def index():
-    """Landing page / Login"""
-    if current_user.is_authenticated:
-        # Redirect to appropriate dashboard
-        if current_user.is_admin:
-            return redirect('/admin/dashboard')
-        elif current_user.is_doctor:
-            return redirect('/doctor/dashboard')
-        elif current_user.is_patient:
-            return redirect('/patient/dashboard')
-    return render_template('index.html')
-
-
-@app.route('/register')
-def register_page():
-    """Registration page"""
-    return render_template('register.html')
-
-
-@app.route('/admin/dashboard')
-@login_required
-def admin_dashboard():
-    """Admin dashboard page"""
-    if not current_user.is_admin:
-        return redirect('/')
-    return render_template('admin_dashboard.html')
-
-
-@app.route('/doctor/dashboard')
-@login_required
-def doctor_dashboard():
-    """Doctor dashboard page"""
-    if not current_user.is_doctor:
-        return redirect('/')
-    return render_template('doctor_dashboard.html')
-
-
-@app.route('/patient/dashboard')
-@login_required
-def patient_dashboard():
-    """Patient dashboard page"""
-    if not current_user.is_patient:
-        return redirect('/')
-    return render_template('patient_dashboard.html')
-
-@app.route('/patient/history')
-@login_required
-def patient_history():
-    """Patient treatment history page"""
-    if not current_user.is_patient:
-        return redirect('/')
-    return render_template('patient_history.html')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
