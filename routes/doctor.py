@@ -483,17 +483,28 @@ def get_patients():
 @doctor_bp.route('/patients/<int:patient_id>/history', methods=['GET'])
 @doctor_required
 def get_patient_history(patient_id):
-    """Get complete treatment history for a specific patient"""
+    """Treatment history for a patient this doctor has actually seen.
+
+    The patient is resolved *through* the appointment relationship rather than
+    by raw id. Fetching them independently - which is what this route used to
+    do - let any doctor read any patient's medical history and allergies just
+    by changing the number in the URL. Same predicate as get_patients() above,
+    so the two agree on who a doctor may look at.
+    """
     try:
         doctor = current_user.doctor_profile
-        patient = Patient.query.get_or_404(patient_id)
-        
+
+        patient = db.session.query(Patient).join(Appointment).filter(
+            Patient.id == patient_id,
+            Appointment.doctor_id == doctor.id
+        ).options(joinedload(Patient.user)).first_or_404()
+
         # Get all appointments with this doctor
         appointments = Appointment.query.filter_by(
             patient_id=patient_id,
             doctor_id=doctor.id
         ).order_by(Appointment.appointment_date.desc()).all()
-        
+
         return jsonify({
             'patient': {
                 'id': patient.id,
