@@ -48,7 +48,26 @@ def create_app(config_name=None):
         'CACHE_REDIS_URL': app.config['CACHE_REDIS_URL'],
         'CACHE_DEFAULT_TIMEOUT': app.config['CACHE_DEFAULT_TIMEOUT'],
     })
-    CORS(app)  # Enable CORS for Vue.js frontend
+    # CORS is off unless you ask for it.
+    #
+    # The Vue pages are served by this same app out of templates/, so every API
+    # call is same-origin and needs no CORS headers at all. The bare `CORS(app)`
+    # that used to sit here reflected whatever Origin the caller sent, so any
+    # site on the internet could read unauthenticated responses. That was only
+    # ever safe by accident: credentials were not allowed, so browsers withheld
+    # the session cookie.
+    #
+    # Set CORS_ORIGINS to a comma-separated list to allow named origins - e.g.
+    # when the frontend moves to its own domain. Credentials stay off: sending
+    # the session cookie cross-origin needs CSRF tokens and SameSite=None first,
+    # and this app has neither.
+    cors_origins = [
+        origin.strip()
+        for origin in os.environ.get('CORS_ORIGINS', '').split(',')
+        if origin.strip()
+    ]
+    if cors_origins:
+        CORS(app, resources={r'/api/*': {'origins': cors_origins}})
 
     # Configure Flask-Login
     login_manager.login_view = 'index'

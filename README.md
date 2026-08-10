@@ -118,6 +118,7 @@ SECRET_KEY=<64 hex chars, e.g. python -c "import secrets; print(secrets.token_he
 DATABASE_URL=<your database>
 REDIS_URL=<your redis>
 TRUST_PROXY_HOPS=1        # only if a reverse proxy sits in front; see below
+CORS_ORIGINS=             # leave empty unless the frontend is on another domain
 ```
 
 `FLASK_ENV=production` loads `ProductionConfig`, which turns debug off and marks
@@ -133,6 +134,13 @@ front of the app. Without it Flask sees the proxy's address and `http://`, so
 redirects come out wrong. With it, `X-Forwarded-For` / `-Proto` / `-Host` are
 honoured. Leave it unset when nothing is in front — those headers can be spoofed
 by anyone talking to the app directly.
+
+**CORS is off by default.** The Vue pages are served by this same app and call
+relative paths, so every request is same-origin and needs no CORS headers. If you
+move the frontend to its own domain, set `CORS_ORIGINS` to a comma-separated list
+of the exact origins allowed — never a wildcard. Credentials stay off, so a
+cross-origin frontend cannot send the session cookie; making that work needs CSRF
+tokens and `SameSite=None`, neither of which this app has yet.
 
 ## Demo logins
 
